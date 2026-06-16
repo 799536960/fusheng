@@ -39,8 +39,8 @@ struct RootMenuContent: View {
                 openWindow(id: "draft-history")
             }
 
-            Button("打开设置") {
-                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+            SettingsLink {
+                Text("打开设置")
             }
 
             Button("退出") {
