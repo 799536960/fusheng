@@ -147,6 +147,25 @@ final class AppCoordinatorTests: XCTestCase {
         }
     }
 
+    func testStartRecordingDoesNothingWhileWorkflowIsActive() async {
+        let activeStates: [AppWorkflowState] = [
+            .recording(startedAt: Date(timeIntervalSince1970: 0)),
+            .recognizing,
+            .polishing,
+            .delivering,
+        ]
+
+        for activeState in activeStates {
+            let recorder = FakeRecorder()
+            let coordinator = makeCoordinator(recorder: recorder, initialState: activeState)
+
+            await coordinator.startRecording()
+
+            XCTAssertEqual(recorder.startCount, 0)
+            XCTAssertEqual(coordinator.state, activeState)
+        }
+    }
+
     private func makeCoordinator(
         settings: FakeSettings = FakeSettings(),
         apiKeyProvider: FakeAPIKeyProvider = FakeAPIKeyProvider(apiKey: "key"),
@@ -156,7 +175,8 @@ final class AppCoordinatorTests: XCTestCase {
         focusDetector: FakeFocus = FakeFocus(.inputAvailable(appName: "Notes")),
         textInserter: FakeInserter? = FakeInserter(),
         draftStore: FakeDraftStore? = nil,
-        sourceAppProvider: FakeSourceAppProvider = FakeSourceAppProvider()
+        sourceAppProvider: FakeSourceAppProvider = FakeSourceAppProvider(),
+        initialState: AppWorkflowState = .idle
     ) -> AppCoordinator {
         AppCoordinator(
             settings: settings,
@@ -167,7 +187,8 @@ final class AppCoordinatorTests: XCTestCase {
             focusDetector: focusDetector,
             textInserter: textInserter,
             draftStore: draftStore ?? FakeDraftStore(),
-            sourceAppProvider: sourceAppProvider
+            sourceAppProvider: sourceAppProvider,
+            initialState: initialState
         )
     }
 }

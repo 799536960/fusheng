@@ -73,7 +73,7 @@ final class AppCoordinator: ObservableObject {
     }
 
     func startRecording() async {
-        guard !state.isRecording else { return }
+        guard state.canStartRecording else { return }
 
         do {
             guard let apiKey = try apiKeyProvider.loadAPIKey()?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -241,10 +241,12 @@ final class AppCoordinator: ObservableObject {
 }
 
 private extension AppWorkflowState {
-    var isRecording: Bool {
-        if case .recording = self {
+    var canStartRecording: Bool {
+        switch self {
+        case .idle, .completed, .failed:
             return true
+        case .recording, .recognizing, .polishing, .delivering:
+            return false
         }
-        return false
     }
 }
