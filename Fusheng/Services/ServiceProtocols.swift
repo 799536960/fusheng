@@ -41,6 +41,11 @@ protocol SourceAppProviding {
     func currentAppName() -> String
 }
 
+protocol AudioRecording {
+    func startRecording() throws -> AsyncThrowingStream<Data, Error>
+    func stopRecording()
+}
+
 enum FocusInputContext: Equatable {
     case inputAvailable(appName: String)
     case noInput(appName: String)

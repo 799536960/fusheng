@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		02476AF9F0774FEB43895031 /* FushengApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A1265E0C93E9A854DFD06D /* FushengApp.swift */; };
 		0E9E0809D481E253A9CD4AA5 /* SanityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 371D87D273B7EDCB67C23105 /* SanityTests.swift */; };
+		14A4B49D6C3D4B1DBB195C2A /* AppCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B13E1A6A915D4D34B8E7B508 /* AppCoordinatorTests.swift */; };
 		1A48D861329B4990BEED020C /* DashScopeASRClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A9858EC822E48A295BD8029 /* DashScopeASRClient.swift */; };
 		23A7A00B1B6CE41A338E30B5 /* DraftStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FA8F28030E292986C7D83D6 /* DraftStoreTests.swift */; };
 		282EBB2EE76345E2B59123D9 /* DashScopeASRClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40C2D7227AC1436684865AC5 /* DashScopeASRClientTests.swift */; };
@@ -63,6 +64,7 @@
 		9303D2F29086C253627E00A8 /* TextPolishClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPolishClient.swift; sourceTree = "<group>"; };
 		AA3E6FAB4AD61CDC0BD553FF /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
 		AC13D3B3C1CF10236F587BD2 /* ServiceProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceProtocols.swift; sourceTree = "<group>"; };
+		B13E1A6A915D4D34B8E7B508 /* AppCoordinatorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinatorTests.swift; sourceTree = "<group>"; };
 		B23291D1921743C8990A8611 /* DashScopeASREvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashScopeASREvents.swift; sourceTree = "<group>"; };
 		C92C68FEA21148CCBDD4FA7D /* DraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraftStore.swift; sourceTree = "<group>"; };
 		D0FE9F810B842D725604C905 /* TextPolishClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPolishClientTests.swift; sourceTree = "<group>"; };
@@ -126,6 +128,7 @@
 		8B17164766E950C30F9864B5 /* FushengTests */ = {
 			isa = PBXGroup;
 			children = (
+				B13E1A6A915D4D34B8E7B508 /* AppCoordinatorTests.swift */,
 				818B343ACE8392EBD1F499B9 /* AppWorkflowStateTests.swift */,
 				40C2D7227AC1436684865AC5 /* DashScopeASRClientTests.swift */,
 				91390D9BC4DB489EA78B33E0 /* DashScopeASREventsTests.swift */,
@@ -286,6 +289,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				14A4B49D6C3D4B1DBB195C2A /* AppCoordinatorTests.swift in Sources */,
 				CD255FBC45259D465861F8D6 /* AppWorkflowStateTests.swift in Sources */,
 				282EBB2EE76345E2B59123D9 /* DashScopeASRClientTests.swift in Sources */,
 				37EF3262DCD94248A4253995 /* DashScopeASREventsTests.swift in Sources */,
