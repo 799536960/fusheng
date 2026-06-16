@@ -1,0 +1,41 @@
+name: Fusheng
+options:
+  minimumXcodeGenVersion: 2.42.0
+  deploymentTarget:
+    macOS: "14.0"
+packages:
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    from: 3.0.0
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+targets:
+  Fusheng:
+    type: application
+    platform: macOS
+    sources:
+      - Fusheng
+    dependencies:
+      - package: KeyboardShortcuts
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fusheng.voiceinput
+        PRODUCT_NAME: Fusheng
+        INFOPLIST_FILE: Fusheng/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Fusheng/Fusheng.entitlements
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_HARDENED_RUNTIME: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  FushengTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - FushengTests
+    dependencies:
+      - target: Fusheng
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.fusheng.voiceinput.tests
+        GENERATE_INFOPLIST_FILE: YES
