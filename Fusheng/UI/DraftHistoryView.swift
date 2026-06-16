@@ -5,6 +5,7 @@ struct DraftHistoryView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \DraftRecord.createdAt, order: .reverse) private var drafts: [DraftRecord]
     @State private var searchText = ""
+    @State private var deletionError: String?
 
     private var filteredDrafts: [DraftRecord] {
         guard !searchText.isEmpty else { return drafts }
@@ -46,8 +47,7 @@ struct DraftHistoryView: View {
                             }
 
                             Button("删除", role: .destructive) {
-                                modelContext.delete(draft)
-                                try? modelContext.save()
+                                delete(draft)
                             }
                         }
                     }
@@ -56,10 +56,39 @@ struct DraftHistoryView: View {
             }
         }
         .padding()
+        .alert("删除失败", isPresented: deletionErrorBinding) {
+            Button("好", role: .cancel) {
+                deletionError = nil
+            }
+        } message: {
+            Text(deletionError ?? "无法删除草稿")
+        }
     }
 
     private func copyToPasteboard(_ text: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
+    }
+
+    private var deletionErrorBinding: Binding<Bool> {
+        Binding(
+            get: { deletionError != nil },
+            set: { isPresented in
+                if !isPresented {
+                    deletionError = nil
+                }
+            }
+        )
+    }
+
+    private func delete(_ draft: DraftRecord) {
+        modelContext.delete(draft)
+
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.rollback()
+            deletionError = error.localizedDescription
+        }
     }
 }

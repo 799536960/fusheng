@@ -228,15 +228,15 @@ final class AppCoordinatorTests: XCTestCase {
             await coordinator.finishRecording()
         }
 
-        while coordinator.state != .recognizing {
-            await Task.yield()
-        }
+        await asr.waitUntilCalled()
 
         await coordinator.finishRecording()
 
-        XCTAssertEqual(asr.callCount, 1)
+        let callCount = await asr.currentCallCount()
+        XCTAssertEqual(callCount, 1)
         XCTAssertEqual(coordinator.state, .recognizing)
 
+        await asr.allowCompletion()
         await finishTask.value
 
         XCTAssertEqual(coordinator.state, .completed(.pasted))
@@ -349,13 +349,43 @@ private struct FakeASR: ASRRecognizing {
     }
 }
 
-private final class DelayedASR: ASRRecognizing {
+private actor DelayedASR: ASRRecognizing {
     private(set) var callCount = 0
+    private var startedContinuation: CheckedContinuation<Void, Never>?
+    private var completionContinuation: CheckedContinuation<Void, Never>?
+    private var completionAllowed = false
+
+    func currentCallCount() -> Int {
+        callCount
+    }
+
+    func waitUntilCalled() async {
+        guard callCount == 0 else { return }
+
+        await withCheckedContinuation { continuation in
+            startedContinuation = continuation
+        }
+    }
+
+    func allowCompletion() {
+        completionAllowed = true
+        completionContinuation?.resume()
+        completionContinuation = nil
+    }
 
     func recognize(audioChunks: AsyncThrowingStream<Data, Error>, model: String, apiKey: String) async throws -> RecognitionResult {
         callCount += 1
+        startedContinuation?.resume()
+        startedContinuation = nil
+
         for try await _ in audioChunks {}
-        try await Task.sleep(nanoseconds: 50_000_000)
+
+        if !completionAllowed {
+            await withCheckedContinuation { continuation in
+                completionContinuation = continuation
+            }
+        }
+
         return RecognitionResult(rawText: "原始文本", partialText: "原始文本")
     }
 }
