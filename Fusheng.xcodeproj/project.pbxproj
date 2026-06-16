@@ -9,9 +9,11 @@
 /* Begin PBXBuildFile section */
 		01B7C413A1E9472C8A8D9341 /* HotkeyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01B7C412A1E9472C8A8D9341 /* HotkeyService.swift */; };
 		02476AF9F0774FEB43895031 /* FushengApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A1265E0C93E9A854DFD06D /* FushengApp.swift */; };
+		0AF5A0D81C6247B5963E118D /* FocusDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AF5A0D71C6247B5963E118D /* FocusDetector.swift */; };
 		0E9E0809D481E253A9CD4AA5 /* SanityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 371D87D273B7EDCB67C23105 /* SanityTests.swift */; };
 		14A4B49D6C3D4B1DBB195C2A /* AppCoordinatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B13E1A6A915D4D34B8E7B508 /* AppCoordinatorTests.swift */; };
 		1A48D861329B4990BEED020C /* DashScopeASRClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A9858EC822E48A295BD8029 /* DashScopeASRClient.swift */; };
+		1C7EA11F204A479AA6DA82A1 /* FocusDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C7EA11E204A479AA6DA82A1 /* FocusDetectorTests.swift */; };
 		23A7A00B1B6CE41A338E30B5 /* DraftStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FA8F28030E292986C7D83D6 /* DraftStoreTests.swift */; };
 		282EBB2EE76345E2B59123D9 /* DashScopeASRClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40C2D7227AC1436684865AC5 /* DashScopeASRClientTests.swift */; };
 		37EF3262DCD94248A4253995 /* DashScopeASREventsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91390D9BC4DB489EA78B33E0 /* DashScopeASREventsTests.swift */; };
@@ -34,6 +36,8 @@
 		BE56E2B0D894707FC91C3E91 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = D2FC80BC64892EAEE4E109BB /* KeyboardShortcuts */; };
 		CD255FBC45259D465861F8D6 /* AppWorkflowStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 818B343ACE8392EBD1F499B9 /* AppWorkflowStateTests.swift */; };
 		D7CF214FB4629C2C4E625D08 /* ServiceProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC13D3B3C1CF10236F587BD2 /* ServiceProtocols.swift */; };
+		D9B501F7C74A4B72A9489D32 /* TextInsertionServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9B501F6C74A4B72A9489D32 /* TextInsertionServiceTests.swift */; };
+		DAF4C9A8B48E41E0A2E10B8F /* TextInsertionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAF4C9A7B48E41E0A2E10B8F /* TextInsertionService.swift */; };
 		E8051648DC895EB23D1BC7E2 /* SettingsStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E82062CD88414B08E1926EC9 /* SettingsStoreTests.swift */; };
 		ED22D5091E886E7BE93271DC /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1A837C05312C815FB892D78 /* KeychainService.swift */; };
 		F1EE67CB8155BA2EB09AE8B2 /* AppModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40E1167C8DDD473C8C44D84F /* AppModels.swift */; };
@@ -53,6 +57,8 @@
 /* Begin PBXFileReference section */
 		01B7C412A1E9472C8A8D9341 /* HotkeyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyService.swift; sourceTree = "<group>"; };
 		09775EF0AB8E43AAA2913F17 /* Fusheng.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Fusheng.entitlements; sourceTree = "<group>"; };
+		0AF5A0D71C6247B5963E118D /* FocusDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusDetector.swift; sourceTree = "<group>"; };
+		1C7EA11E204A479AA6DA82A1 /* FocusDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusDetectorTests.swift; sourceTree = "<group>"; };
 		29A1265E0C93E9A854DFD06D /* FushengApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FushengApp.swift; sourceTree = "<group>"; };
 		371D87D273B7EDCB67C23105 /* SanityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SanityTests.swift; sourceTree = "<group>"; };
 		40C2D7227AC1436684865AC5 /* DashScopeASRClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashScopeASRClientTests.swift; sourceTree = "<group>"; };
@@ -81,6 +87,8 @@
 		C92C68FEA21148CCBDD4FA7D /* DraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraftStore.swift; sourceTree = "<group>"; };
 		D0FE9F810B842D725604C905 /* TextPolishClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPolishClientTests.swift; sourceTree = "<group>"; };
 		D746D10CDD6B039628AC73D4 /* FushengTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FushengTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		D9B501F6C74A4B72A9489D32 /* TextInsertionServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInsertionServiceTests.swift; sourceTree = "<group>"; };
+		DAF4C9A7B48E41E0A2E10B8F /* TextInsertionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInsertionService.swift; sourceTree = "<group>"; };
 		E82062CD88414B08E1926EC9 /* SettingsStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStoreTests.swift; sourceTree = "<group>"; };
 		EE14AD6B1FA64D135757FA09 /* RootMenuContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootMenuContent.swift; sourceTree = "<group>"; };
 		EF4E7CF5715F67D1DEA7E50D /* Fusheng.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fusheng.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -148,10 +156,12 @@
 				40C2D7227AC1436684865AC5 /* DashScopeASRClientTests.swift */,
 				91390D9BC4DB489EA78B33E0 /* DashScopeASREventsTests.swift */,
 				8FA8F28030E292986C7D83D6 /* DraftStoreTests.swift */,
+				1C7EA11E204A479AA6DA82A1 /* FocusDetectorTests.swift */,
 				66A1D95E7A2B4D3E91C8F011 /* HotkeyServiceTests.swift */,
 				6F9725AEED5D8C39E7387255 /* KeychainServiceTests.swift */,
 				371D87D273B7EDCB67C23105 /* SanityTests.swift */,
 				E82062CD88414B08E1926EC9 /* SettingsStoreTests.swift */,
+				D9B501F6C74A4B72A9489D32 /* TextInsertionServiceTests.swift */,
 				D0FE9F810B842D725604C905 /* TextPolishClientTests.swift */,
 			);
 			path = FushengTests;
@@ -194,10 +204,12 @@
 				8A9858EC822E48A295BD8029 /* DashScopeASRClient.swift */,
 				B23291D1921743C8990A8611 /* DashScopeASREvents.swift */,
 				C92C68FEA21148CCBDD4FA7D /* DraftStore.swift */,
+				0AF5A0D71C6247B5963E118D /* FocusDetector.swift */,
 				01B7C412A1E9472C8A8D9341 /* HotkeyService.swift */,
 				F1A837C05312C815FB892D78 /* KeychainService.swift */,
 				AC13D3B3C1CF10236F587BD2 /* ServiceProtocols.swift */,
 				48524251246C7FE0CC1F5988 /* SettingsStore.swift */,
+				DAF4C9A7B48E41E0A2E10B8F /* TextInsertionService.swift */,
 				9303D2F29086C253627E00A8 /* TextPolishClient.swift */,
 			);
 			path = Services;
@@ -292,6 +304,7 @@
 				8B3D402C735E4AB9BC31251E /* AudioRecorder.swift in Sources */,
 				1A48D861329B4990BEED020C /* DashScopeASRClient.swift in Sources */,
 				536102F9843144B9802570A0 /* DashScopeASREvents.swift in Sources */,
+				0AF5A0D81C6247B5963E118D /* FocusDetector.swift in Sources */,
 				02476AF9F0774FEB43895031 /* FushengApp.swift in Sources */,
 				5F3D861BC6C1C9D77B38A95F /* DraftStore.swift in Sources */,
 				01B7C413A1E9472C8A8D9341 /* HotkeyService.swift in Sources */,
@@ -302,6 +315,7 @@
 				D7CF214FB4629C2C4E625D08 /* ServiceProtocols.swift in Sources */,
 				C1D2E3F40516273849A5B6C7 /* SettingsView.swift in Sources */,
 				4BD26D9F1048D14E00FB82E4 /* SettingsStore.swift in Sources */,
+				DAF4C9A8B48E41E0A2E10B8F /* TextInsertionService.swift in Sources */,
 				76A3C76AE5373284B31E51B1 /* TextPolishClient.swift in Sources */,
 				72EB0BB3D2D71A839FBD07CF /* TextPolishMode.swift in Sources */,
 				AC1A545427B898CE5578C82A /* TriggerMode.swift in Sources */,
@@ -317,10 +331,12 @@
 				282EBB2EE76345E2B59123D9 /* DashScopeASRClientTests.swift in Sources */,
 				37EF3262DCD94248A4253995 /* DashScopeASREventsTests.swift in Sources */,
 				23A7A00B1B6CE41A338E30B5 /* DraftStoreTests.swift in Sources */,
+				1C7EA11F204A479AA6DA82A1 /* FocusDetectorTests.swift in Sources */,
 				66A1D95F7A2B4D3E91C8F011 /* HotkeyServiceTests.swift in Sources */,
 				62910D7216089F47B586366B /* KeychainServiceTests.swift in Sources */,
 				0E9E0809D481E253A9CD4AA5 /* SanityTests.swift in Sources */,
 				E8051648DC895EB23D1BC7E2 /* SettingsStoreTests.swift in Sources */,
+				D9B501F7C74A4B72A9489D32 /* TextInsertionServiceTests.swift in Sources */,
 				6C7F47082B92E4378F119C87 /* TextPolishClientTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

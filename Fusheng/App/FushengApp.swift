@@ -12,16 +12,17 @@ struct FushengApp: App {
     init() {
         let settings = SettingsStore()
         let draftModelContainer = Self.makeDraftModelContainer()
+        let focusDetector = FocusDetector()
         let coordinator = AppCoordinator(
             settings: settings,
             apiKeyProvider: KeychainService(),
             recorder: AudioRecorder(),
             asrClient: DashScopeASRClient(),
             textPolisher: TextPolishClient(),
-            focusDetector: nil,
-            textInserter: nil,
+            focusDetector: focusDetector,
+            textInserter: TextInsertionService(),
             draftStore: DraftStore(modelContext: draftModelContainer.mainContext),
-            sourceAppProvider: nil
+            sourceAppProvider: focusDetector
         )
 
         self.settings = settings
