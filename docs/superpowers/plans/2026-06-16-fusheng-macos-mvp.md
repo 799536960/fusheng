@@ -2570,6 +2570,24 @@ Manual verification on 2026-06-16:
 - API Key is absent from logs: pass
 ```
 
+Actual verification on 2026-06-16:
+- Automated tests: pass. `xcodebuild test -project Fusheng.xcodeproj -scheme Fusheng -destination 'platform=macOS'` executed 64 tests with 0 failures and ended with `** TEST SUCCEEDED **`.
+- Build: pass. `xcodebuild build -project Fusheng.xcodeproj -scheme Fusheng -destination 'platform=macOS'` ended with `** BUILD SUCCEEDED **`.
+- Runtime launch: pass. The Debug app launched from `/Users/liudong/Library/Developer/Xcode/DerivedData/Fusheng-abcvbuywzmlvjshjpgdgmavzwqyp/Build/Products/Debug/Fusheng.app` as PID 20849.
+- Menu bar item: pass after fix. Initial Accessibility read returned `waveform.circle`; `FushengApp` was updated to use an explicit `Label("浮声", systemImage: ...)` with `.accessibilityLabel("浮声")`; recheck returned `浮声`.
+- Menu content: pass. Accessibility read returned `状态：空闲`, `开始/停止录音`, `暂无草稿`, `打开草稿历史`, `打开设置`, and `退出`.
+- Keychain API Key state: missing. `security find-generic-password -s com.fusheng.voiceinput -a dashscope-api-key` reported no configured item without printing any secret.
+- API Key saves and reloads from Keychain: not run manually; skipped to avoid writing a dummy or real secret into the user's Keychain without explicit test input. Covered by unit tests with a fake Keychain client.
+- Toggle trigger starts and finishes recording: not run manually; requires configured DashScope API Key and microphone permission.
+- Hold trigger starts on key down and finishes on key up: not run manually; requires configured DashScope API Key and microphone permission. Covered by `HotkeyServiceTests`.
+- Real DashScope ASR returns Chinese text: not run; blocked by missing configured DashScope API Key.
+- Text polish returns cleaned text: not run against the live service; blocked by missing configured DashScope API Key. Request/response behavior is covered by `TextPolishClientTests`.
+- Focused text input receives pasted text: not run end-to-end; requires live ASR output and Accessibility permission. Paste service behavior is covered by `TextInsertionServiceTests`.
+- No focused text input creates draft: not run end-to-end; requires live ASR output. Coordinator fallback behavior is covered by `AppCoordinatorTests`.
+- Draft copy works: not run manually because no runtime draft was created during this verification.
+- Draft delete works: not run manually because no runtime draft was created during this verification. Store deletion is covered by `DraftStoreTests`.
+- API Key is absent from logs: partial pass. Source scan found no `print`, `NSLog`, `os_log`, or `Logger` calls in app code; full runtime logging with a real API Key was not performed because no key is configured.
+
 - [ ] **Step 4: Commit verification notes**
 
 ```bash
