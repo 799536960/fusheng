@@ -1,5 +1,7 @@
 import Foundation
 
+private struct ASRTimeout: Error {}
+
 protocol WebSocketTasking {
     func resume()
     func send(_ message: URLSessionWebSocketTask.Message) async throws
@@ -150,15 +152,23 @@ struct DashScopeASRClient: ASRRecognizing {
             group.addTask {
                 let nanoseconds = UInt64(max(seconds, 0) * 1_000_000_000)
                 try await Task.sleep(nanoseconds: nanoseconds)
-                onTimeout()
-                throw AppError.asrFailed(message)
+                throw ASRTimeout()
             }
 
-            guard let result = try await group.next() else {
+            do {
+                guard let result = try await group.next() else {
+                    throw AppError.asrFailed(message)
+                }
+                group.cancelAll()
+                return result
+            } catch is ASRTimeout {
+                onTimeout()
+                group.cancelAll()
                 throw AppError.asrFailed(message)
+            } catch {
+                group.cancelAll()
+                throw error
             }
-            group.cancelAll()
-            return result
         }
     }
 }
