@@ -31,13 +31,16 @@ struct FushengApp: App {
     }
 
     var body: some Scene {
-        MenuBarExtra("浮声", systemImage: coordinator.menuBarSystemImage) {
+        MenuBarExtra {
             RootMenuContent()
                 .environmentObject(coordinator)
                 .modelContainer(draftModelContainer)
                 .task {
                     startHotkeyServiceIfNeeded()
                 }
+        } label: {
+            Label("浮声", systemImage: coordinator.menuBarSystemImage)
+                .accessibilityLabel("浮声")
         }
         .menuBarExtraStyle(.menu)
 
