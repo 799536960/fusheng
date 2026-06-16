@@ -2,13 +2,23 @@ import Foundation
 
 @MainActor
 final class AppCoordinator: ObservableObject {
-    @Published private(set) var statusText = "空闲"
+    @Published private(set) var state: AppWorkflowState = .idle
 
-    var menuBarSystemImage: String {
-        statusText == "录音中" ? "waveform.circle.fill" : "waveform.circle"
+    init(initialState: AppWorkflowState = .idle) {
+        state = initialState
     }
 
+    var statusText: String { state.displayText }
+    var menuBarSystemImage: String { state.menuBarSystemImage }
+
     func toggleRecordingForShell() {
-        statusText = statusText == "录音中" ? "空闲" : "录音中"
+        switch state {
+        case .recording:
+            state = .idle
+        case .idle, .completed, .failed:
+            state = .recording(startedAt: Date())
+        case .recognizing, .polishing, .delivering:
+            break
+        }
     }
 }

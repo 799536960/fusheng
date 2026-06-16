@@ -9,9 +9,16 @@
 /* Begin PBXBuildFile section */
 		02476AF9F0774FEB43895031 /* FushengApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29A1265E0C93E9A854DFD06D /* FushengApp.swift */; };
 		0E9E0809D481E253A9CD4AA5 /* SanityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 371D87D273B7EDCB67C23105 /* SanityTests.swift */; };
+		72EB0BB3D2D71A839FBD07CF /* TextPolishMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52B42A0D9A138AB71A2EE218 /* TextPolishMode.swift */; };
+		791AEC241F97C9729F9FFB3F /* AppWorkflowState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57C239C13D816859635ADE02 /* AppWorkflowState.swift */; };
 		7BBC79D524D38347AEE163F6 /* RootMenuContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE14AD6B1FA64D135757FA09 /* RootMenuContent.swift */; };
 		AB7BF4BAE198A6B160307C74 /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA3E6FAB4AD61CDC0BD553FF /* AppCoordinator.swift */; };
+		AC1A545427B898CE5578C82A /* TriggerMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85B70C9798FC76920F5FA4DE /* TriggerMode.swift */; };
 		BE56E2B0D894707FC91C3E91 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = D2FC80BC64892EAEE4E109BB /* KeyboardShortcuts */; };
+		CD255FBC45259D465861F8D6 /* AppWorkflowStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 818B343ACE8392EBD1F499B9 /* AppWorkflowStateTests.swift */; };
+		D7CF214FB4629C2C4E625D08 /* ServiceProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC13D3B3C1CF10236F587BD2 /* ServiceProtocols.swift */; };
+		F1EE67CB8155BA2EB09AE8B2 /* AppModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40E1167C8DDD473C8C44D84F /* AppModels.swift */; };
+		F7D8F3D4D5BFA4CFD784A260 /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B40000F297BBBF70C467732 /* AppError.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -28,8 +35,15 @@
 		09775EF0AB8E43AAA2913F17 /* Fusheng.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Fusheng.entitlements; sourceTree = "<group>"; };
 		29A1265E0C93E9A854DFD06D /* FushengApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FushengApp.swift; sourceTree = "<group>"; };
 		371D87D273B7EDCB67C23105 /* SanityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SanityTests.swift; sourceTree = "<group>"; };
+		40E1167C8DDD473C8C44D84F /* AppModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModels.swift; sourceTree = "<group>"; };
+		52B42A0D9A138AB71A2EE218 /* TextPolishMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPolishMode.swift; sourceTree = "<group>"; };
+		57C239C13D816859635ADE02 /* AppWorkflowState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppWorkflowState.swift; sourceTree = "<group>"; };
+		6B40000F297BBBF70C467732 /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
+		818B343ACE8392EBD1F499B9 /* AppWorkflowStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppWorkflowStateTests.swift; sourceTree = "<group>"; };
 		81F69A2ED98A4D65273EAB89 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		85B70C9798FC76920F5FA4DE /* TriggerMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TriggerMode.swift; sourceTree = "<group>"; };
 		AA3E6FAB4AD61CDC0BD553FF /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
+		AC13D3B3C1CF10236F587BD2 /* ServiceProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceProtocols.swift; sourceTree = "<group>"; };
 		D746D10CDD6B039628AC73D4 /* FushengTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FushengTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EE14AD6B1FA64D135757FA09 /* RootMenuContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootMenuContent.swift; sourceTree = "<group>"; };
 		EF4E7CF5715F67D1DEA7E50D /* Fusheng.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Fusheng.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -56,6 +70,18 @@
 			);
 			sourceTree = "<group>";
 		};
+		09ABD3CF701E2C58D07E1370 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				6B40000F297BBBF70C467732 /* AppError.swift */,
+				40E1167C8DDD473C8C44D84F /* AppModels.swift */,
+				57C239C13D816859635ADE02 /* AppWorkflowState.swift */,
+				52B42A0D9A138AB71A2EE218 /* TextPolishMode.swift */,
+				85B70C9798FC76920F5FA4DE /* TriggerMode.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
 		190B1194C551B25F883FC418 /* UI */ = {
 			isa = PBXGroup;
 			children = (
@@ -76,6 +102,7 @@
 		8B17164766E950C30F9864B5 /* FushengTests */ = {
 			isa = PBXGroup;
 			children = (
+				818B343ACE8392EBD1F499B9 /* AppWorkflowStateTests.swift */,
 				371D87D273B7EDCB67C23105 /* SanityTests.swift */,
 			);
 			path = FushengTests;
@@ -103,10 +130,20 @@
 			children = (
 				09775EF0AB8E43AAA2913F17 /* Fusheng.entitlements */,
 				C76B4F0010C25D0FECC47F63 /* App */,
+				09ABD3CF701E2C58D07E1370 /* Core */,
 				CC15944690AAC224A208AA03 /* Resources */,
+				F59C24C0017FC62511D2BC07 /* Services */,
 				190B1194C551B25F883FC418 /* UI */,
 			);
 			path = Fusheng;
+			sourceTree = "<group>";
+		};
+		F59C24C0017FC62511D2BC07 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				AC13D3B3C1CF10236F587BD2 /* ServiceProtocols.swift */,
+			);
+			path = Services;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -192,8 +229,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				AB7BF4BAE198A6B160307C74 /* AppCoordinator.swift in Sources */,
+				F7D8F3D4D5BFA4CFD784A260 /* AppError.swift in Sources */,
+				F1EE67CB8155BA2EB09AE8B2 /* AppModels.swift in Sources */,
+				791AEC241F97C9729F9FFB3F /* AppWorkflowState.swift in Sources */,
 				02476AF9F0774FEB43895031 /* FushengApp.swift in Sources */,
 				7BBC79D524D38347AEE163F6 /* RootMenuContent.swift in Sources */,
+				D7CF214FB4629C2C4E625D08 /* ServiceProtocols.swift in Sources */,
+				72EB0BB3D2D71A839FBD07CF /* TextPolishMode.swift in Sources */,
+				AC1A545427B898CE5578C82A /* TriggerMode.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -201,6 +244,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CD255FBC45259D465861F8D6 /* AppWorkflowStateTests.swift in Sources */,
 				0E9E0809D481E253A9CD4AA5 /* SanityTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
