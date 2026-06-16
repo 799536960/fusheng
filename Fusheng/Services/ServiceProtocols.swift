@@ -14,6 +14,7 @@ protocol SettingsProviding {
     var keepDraftHistoryEnabled: Bool { get set }
 }
 
+@MainActor
 protocol DraftStoring {
     func saveDraft(polishedText: String, rawASRText: String, sourceAppName: String, mode: TextPolishMode, deliveryStatus: DraftDeliveryStatus, errorSummary: String?) throws
     func recentDrafts(limit: Int) throws -> [DraftSnapshot]
