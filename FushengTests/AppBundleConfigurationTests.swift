@@ -11,6 +11,7 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertEqual(plist["CFBundleIdentifier"] as? String, "$(PRODUCT_BUNDLE_IDENTIFIER)")
         XCTAssertEqual(plist["CFBundleName"] as? String, "$(PRODUCT_NAME)")
         XCTAssertEqual(plist["CFBundlePackageType"] as? String, "APPL")
+        XCTAssertEqual(plist["CFBundleLocalizations"] as? [String], ["zh-Hans"])
     }
 
     func testRootMenuUsesOpenSettingsAndActivatesTheApp() throws {
@@ -28,6 +29,18 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertFalse(source.contains("showSettingsWindow"))
         XCTAssertFalse(source.contains("activate(ignoringOtherApps: true)"))
         XCTAssertFalse(source.contains("SettingsLink"))
+    }
+
+    func testSettingsViewUsesGuidedShortcutRecorder() throws {
+        let source = try String(
+            contentsOf: projectRoot.appending(path: "Fusheng/UI/SettingsView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("ShortcutRecorderField(name: .voiceInput)"))
+        XCTAssertTrue(source.contains("KeyboardShortcuts.RecorderCocoa(for: name)"))
+        XCTAssertTrue(source.contains("必须同时按下修饰键和普通键"))
+        XCTAssertFalse(source.contains("KeyboardShortcuts.Recorder(\"语音输入\""))
     }
 
     func testAppIconAssetCatalogIsConfiguredAsAResource() throws {

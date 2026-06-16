@@ -1,3 +1,4 @@
+import AppKit
 import KeyboardShortcuts
 import SwiftUI
 
@@ -39,7 +40,13 @@ struct SettingsView: View {
             }
 
             Section("快捷键") {
-                KeyboardShortcuts.Recorder("语音输入", name: .voiceInput)
+                LabeledContent("语音输入") {
+                    ShortcutRecorderField(name: .voiceInput)
+                        .frame(width: 260)
+                }
+                Text("必须同时按下修饰键和普通键，例如 Control + Space 或 Command + Shift + V；单独字母、数字或单独修饰键不会被记录。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
                 Picker("触发方式", selection: Binding(get: { settings.triggerMode }, set: { settings.triggerMode = $0 })) {
                     ForEach(TriggerMode.allCases) { mode in
@@ -67,5 +74,24 @@ struct SettingsView: View {
         } catch {
             keychainMessage = error.localizedDescription
         }
+    }
+}
+
+private struct ShortcutRecorderField: NSViewRepresentable {
+    let name: KeyboardShortcuts.Name
+
+    func makeNSView(context: Context) -> KeyboardShortcuts.RecorderCocoa {
+        let recorder = KeyboardShortcuts.RecorderCocoa(for: name)
+        recorder.toolTip = tooltip
+        return recorder
+    }
+
+    func updateNSView(_ recorder: KeyboardShortcuts.RecorderCocoa, context: Context) {
+        recorder.shortcutName = name
+        recorder.toolTip = tooltip
+    }
+
+    private var tooltip: String {
+        "必须同时按下修饰键和普通键，例如 Control + Space 或 Command + Shift + V；单独字母、数字或单独修饰键不会被记录。"
     }
 }
