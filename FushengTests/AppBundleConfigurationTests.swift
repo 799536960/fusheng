@@ -2,14 +2,32 @@ import AppKit
 import XCTest
 
 final class AppBundleConfigurationTests: XCTestCase {
-    func testRootMenuUsesSwiftUISettingsLink() throws {
+    func testInfoPlistDefinesLaunchableBundleMetadata() throws {
+        let infoPlist = projectRoot.appending(path: "Fusheng/Resources/Info.plist")
+        let data = try Data(contentsOf: infoPlist)
+        let plist = try XCTUnwrap(PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any])
+
+        XCTAssertEqual(plist["CFBundleExecutable"] as? String, "$(EXECUTABLE_NAME)")
+        XCTAssertEqual(plist["CFBundleIdentifier"] as? String, "$(PRODUCT_BUNDLE_IDENTIFIER)")
+        XCTAssertEqual(plist["CFBundleName"] as? String, "$(PRODUCT_NAME)")
+        XCTAssertEqual(plist["CFBundlePackageType"] as? String, "APPL")
+    }
+
+    func testRootMenuUsesOpenSettingsAndActivatesTheApp() throws {
         let source = try String(
             contentsOf: projectRoot.appending(path: "Fusheng/UI/RootMenuContent.swift"),
             encoding: .utf8
         )
 
-        XCTAssertTrue(source.contains("SettingsLink"))
+        XCTAssertTrue(source.contains("@Environment(\\.openSettings)"))
+        XCTAssertTrue(source.contains("openSettings()"))
+        XCTAssertTrue(source.contains("NSApp.activate()"))
+        XCTAssertTrue(source.contains("makeKeyAndOrderFront(nil)"))
+        XCTAssertTrue(source.contains("orderFrontRegardless()"))
+        XCTAssertTrue(source.contains("DispatchQueue.main.asyncAfter"))
         XCTAssertFalse(source.contains("showSettingsWindow"))
+        XCTAssertFalse(source.contains("activate(ignoringOtherApps: true)"))
+        XCTAssertFalse(source.contains("SettingsLink"))
     }
 
     func testAppIconAssetCatalogIsConfiguredAsAResource() throws {

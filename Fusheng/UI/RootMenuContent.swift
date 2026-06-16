@@ -1,9 +1,11 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
 struct RootMenuContent: View {
     @EnvironmentObject private var coordinator: AppCoordinator
     @Environment(\.openWindow) private var openWindow
+    @Environment(\.openSettings) private var openSettings
     @Query(sort: \DraftRecord.createdAt, order: .reverse) private var drafts: [DraftRecord]
 
     var body: some View {
@@ -39,9 +41,7 @@ struct RootMenuContent: View {
                 openWindow(id: "draft-history")
             }
 
-            SettingsLink {
-                Text("打开设置")
-            }
+            Button("打开设置", action: openSettingsWindow)
 
             Button("退出") {
                 NSApp.terminate(nil)
@@ -53,5 +53,27 @@ struct RootMenuContent: View {
     private func copyToPasteboard(_ text: String) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(text, forType: .string)
+    }
+
+    private func openSettingsWindow() {
+        openSettings()
+        bringSettingsWindowToFront()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            bringSettingsWindowToFront()
+        }
+    }
+
+    private func bringSettingsWindowToFront() {
+        NSApp.activate()
+
+        NSApp.windows
+            .filter { window in
+                window.title.localizedCaseInsensitiveContains("settings")
+                    || window.title.contains("设置")
+            }
+            .forEach { window in
+                window.makeKeyAndOrderFront(nil)
+                window.orderFrontRegardless()
+            }
     }
 }
