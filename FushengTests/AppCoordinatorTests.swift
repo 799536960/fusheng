@@ -129,7 +129,28 @@ final class AppCoordinatorTests: XCTestCase {
 
         XCTAssertEqual(drafts.savedDrafts.map(\.polishedText), ["原始文本"])
         XCTAssertEqual(drafts.savedDrafts.map(\.rawASRText), ["原始文本"])
-        XCTAssertEqual(drafts.savedDrafts.map(\.deliveryStatus), [.noInput(appName: "Preview")])
+        XCTAssertEqual(drafts.savedDrafts.map(\.deliveryStatus), [.savedDraft])
+        XCTAssertEqual(drafts.savedDrafts.map(\.sourceAppName), ["Preview"])
+        XCTAssertNotNil(drafts.savedDrafts.first?.errorSummary)
+        XCTAssertEqual(coordinator.state, .completed(.savedDraft))
+    }
+
+    func testPolishFailureWithInputAvailableSavesRawTextWithoutPasting() async {
+        let drafts = FakeDraftStore()
+        let inserter = FakeInserter()
+        let coordinator = makeCoordinator(
+            textPolisher: FakePolisher(error: FakeError.polishFailed),
+            focusDetector: FakeFocus(.inputAvailable(appName: "Notes")),
+            textInserter: inserter,
+            draftStore: drafts
+        )
+
+        await coordinator.startRecording()
+        await coordinator.finishRecording()
+
+        XCTAssertEqual(inserter.pastedTexts, [])
+        XCTAssertEqual(drafts.savedDrafts.map(\.polishedText), ["原始文本"])
+        XCTAssertEqual(drafts.savedDrafts.map(\.deliveryStatus), [.savedDraft])
         XCTAssertEqual(coordinator.state, .completed(.savedDraft))
     }
 
@@ -137,6 +158,38 @@ final class AppCoordinatorTests: XCTestCase {
         let coordinator = makeCoordinator(
             focusDetector: FakeFocus(.noInput(appName: "Preview")),
             draftStore: FakeDraftStore(saveError: FakeError.draftSaveFailed)
+        )
+
+        await coordinator.startRecording()
+        await coordinator.finishRecording()
+
+        guard case .failed(.insertionFailed) = coordinator.state else {
+            return XCTFail("Expected insertion failure, got \(coordinator.state)")
+        }
+    }
+
+    func testDraftHistoryDisabledFailsWhenDraftIsRequired() async {
+        let settings = FakeSettings(keepDraftHistoryEnabled: false)
+        let drafts = FakeDraftStore()
+        let coordinator = makeCoordinator(
+            settings: settings,
+            focusDetector: FakeFocus(.noInput(appName: "Preview")),
+            draftStore: drafts
+        )
+
+        await coordinator.startRecording()
+        await coordinator.finishRecording()
+
+        XCTAssertEqual(drafts.savedDrafts.count, 0)
+        guard case .failed(.insertionFailed) = coordinator.state else {
+            return XCTFail("Expected insertion failure, got \(coordinator.state)")
+        }
+    }
+
+    func testMissingDraftStoreFailsWhenDraftIsRequired() async {
+        let coordinator = makeCoordinator(
+            focusDetector: FakeFocus(.noInput(appName: "Preview")),
+            installDefaultDraftStore: false
         )
 
         await coordinator.startRecording()
@@ -166,19 +219,45 @@ final class AppCoordinatorTests: XCTestCase {
         }
     }
 
+    func testFinishRecordingDoesNothingWhileWorkflowIsAlreadyProcessing() async {
+        let asr = DelayedASR()
+        let coordinator = makeCoordinator(asrClient: asr)
+
+        await coordinator.startRecording()
+        let finishTask = Task {
+            await coordinator.finishRecording()
+        }
+
+        while coordinator.state != .recognizing {
+            await Task.yield()
+        }
+
+        await coordinator.finishRecording()
+
+        XCTAssertEqual(asr.callCount, 1)
+        XCTAssertEqual(coordinator.state, .recognizing)
+
+        await finishTask.value
+
+        XCTAssertEqual(coordinator.state, .completed(.pasted))
+    }
+
     private func makeCoordinator(
         settings: FakeSettings = FakeSettings(),
         apiKeyProvider: FakeAPIKeyProvider = FakeAPIKeyProvider(apiKey: "key"),
         recorder: FakeRecorder = FakeRecorder(),
-        asrClient: FakeASR = FakeASR(text: "原始文本"),
+        asrClient: ASRRecognizing = FakeASR(text: "原始文本"),
         textPolisher: FakePolisher = FakePolisher(text: "整理文本"),
         focusDetector: FakeFocus = FakeFocus(.inputAvailable(appName: "Notes")),
         textInserter: FakeInserter? = FakeInserter(),
-        draftStore: FakeDraftStore? = nil,
+        draftStore: DraftStoring? = nil,
+        installDefaultDraftStore: Bool = true,
         sourceAppProvider: FakeSourceAppProvider = FakeSourceAppProvider(),
         initialState: AppWorkflowState = .idle
     ) -> AppCoordinator {
-        AppCoordinator(
+        let resolvedDraftStore = draftStore ?? (installDefaultDraftStore ? FakeDraftStore() : nil)
+
+        return AppCoordinator(
             settings: settings,
             apiKeyProvider: apiKeyProvider,
             recorder: recorder,
@@ -186,7 +265,7 @@ final class AppCoordinatorTests: XCTestCase {
             textPolisher: textPolisher,
             focusDetector: focusDetector,
             textInserter: textInserter,
-            draftStore: draftStore ?? FakeDraftStore(),
+            draftStore: resolvedDraftStore,
             sourceAppProvider: sourceAppProvider,
             initialState: initialState
         )
@@ -267,6 +346,17 @@ private struct FakeASR: ASRRecognizing {
     func recognize(audioChunks: AsyncThrowingStream<Data, Error>, model: String, apiKey: String) async throws -> RecognitionResult {
         for try await _ in audioChunks {}
         return RecognitionResult(rawText: text, partialText: text)
+    }
+}
+
+private final class DelayedASR: ASRRecognizing {
+    private(set) var callCount = 0
+
+    func recognize(audioChunks: AsyncThrowingStream<Data, Error>, model: String, apiKey: String) async throws -> RecognitionResult {
+        callCount += 1
+        for try await _ in audioChunks {}
+        try await Task.sleep(nanoseconds: 50_000_000)
+        return RecognitionResult(rawText: "原始文本", partialText: "原始文本")
     }
 }
 

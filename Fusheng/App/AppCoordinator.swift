@@ -98,6 +98,8 @@ final class AppCoordinator: ObservableObject {
     }
 
     func finishRecording() async {
+        guard case .recording = state else { return }
+
         guard let audioStream = activeAudioStream, let apiKey = activeAPIKey else {
             state = .failed(.recorderFailed("没有正在进行的录音"))
             return
@@ -134,7 +136,7 @@ final class AppCoordinator: ObservableObject {
                 await deliver(polishedText: polishedText, rawText: recognition.rawText)
             } catch {
                 state = .delivering
-                await deliver(polishedText: recognition.rawText, rawText: recognition.rawText)
+                savePolishFailureDraft(rawText: recognition.rawText, errorSummary: error.localizedDescription)
             }
         } catch let error as AppError {
             state = .failed(error)
@@ -210,6 +212,30 @@ final class AppCoordinator: ObservableObject {
         }
     }
 
+    private func savePolishFailureDraft(rawText: String, errorSummary: String) {
+        let focusContext = focusDetector?.focusedInputContext() ?? .noInput(appName: fallbackAppName)
+        let sourceAppName = appName(from: focusContext)
+
+        if saveDraft(
+            polishedText: rawText,
+            rawText: rawText,
+            sourceAppName: sourceAppName,
+            deliveryStatus: .savedDraft,
+            errorSummary: errorSummary
+        ) {
+            state = .completed(.savedDraft)
+        }
+    }
+
+    private func appName(from focusContext: FocusInputContext) -> String {
+        switch focusContext {
+        case .inputAvailable(let appName),
+             .noInput(let appName),
+             .accessibilityPermissionMissing(let appName):
+            return appName
+        }
+    }
+
     private var fallbackAppName: String {
         sourceAppProvider?.currentAppName() ?? "未知 App"
     }
@@ -221,10 +247,18 @@ final class AppCoordinator: ObservableObject {
         deliveryStatus: DraftDeliveryStatus,
         errorSummary: String?
     ) -> Bool {
-        guard settings.keepDraftHistoryEnabled else { return true }
+        guard settings.keepDraftHistoryEnabled else {
+            state = .failed(.insertionFailed("草稿历史已关闭"))
+            return false
+        }
+
+        guard let draftStore else {
+            state = .failed(.insertionFailed("草稿服务未初始化"))
+            return false
+        }
 
         do {
-            try draftStore?.saveDraft(
+            try draftStore.saveDraft(
                 polishedText: polishedText,
                 rawASRText: rawText,
                 sourceAppName: sourceAppName,
