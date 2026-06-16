@@ -25,6 +25,10 @@ protocol TextPolishing {
     func polish(rawText: String, mode: TextPolishMode, model: String, apiKey: String) async throws -> String
 }
 
+protocol ASRRecognizing {
+    func recognize(audioChunks: AsyncThrowingStream<Data, Error>, model: String, apiKey: String) async throws -> RecognitionResult
+}
+
 protocol FocusDetecting {
     func focusedInputContext() -> FocusInputContext
 }
