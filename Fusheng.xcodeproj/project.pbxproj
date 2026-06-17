@@ -25,8 +25,10 @@
 		72EB0BB3D2D71A839FBD07CF /* TextPolishMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52B42A0D9A138AB71A2EE218 /* TextPolishMode.swift */; };
 		791AEC241F97C9729F9FFB3F /* AppWorkflowState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57C239C13D816859635ADE02 /* AppWorkflowState.swift */; };
 		7BBC79D524D38347AEE163F6 /* RootMenuContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE14AD6B1FA64D135757FA09 /* RootMenuContent.swift */; };
+		7C35B5D5AB2F509E8CE2D59F /* AudioStreamTee.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7064E5B9408CCD84E4370970 /* AudioStreamTee.swift */; };
 		8041D61901E3528BFF33489B /* RecordingOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12C00C5BFFEE18B24DE8247A /* RecordingOverlayView.swift */; };
 		88352D4BAF22EC0912F87D86 /* AppBundleConfigurationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92F781451AFDDB38CC731BC3 /* AppBundleConfigurationTests.swift */; };
+		8D5E856947CEF77620EFC9DE /* AudioStreamTeeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 718D269B784752C360258A37 /* AudioStreamTeeTests.swift */; };
 		941593681433CDD5A5773636 /* DashScopeASREvents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1257E16BDD348F7EB27D205A /* DashScopeASREvents.swift */; };
 		949CEE80AD8EBB2F9AC402AD /* TextInsertionServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96CBFD4AE8477F9985BDA0AB /* TextInsertionServiceTests.swift */; };
 		95463C362DC81DADC667E5A6 /* TextPolishClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9BC2793019DD0E13C7ED36 /* TextPolishClientTests.swift */; };
@@ -87,6 +89,8 @@
 		5AC2CC8A3EE453C158DFAD0E /* FailedRecordingStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FailedRecordingStoreTests.swift; sourceTree = "<group>"; };
 		6B40000F297BBBF70C467732 /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
 		6C6694440212E6102EA6965A /* FailedRecordingAudioStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FailedRecordingAudioStore.swift; sourceTree = "<group>"; };
+		7064E5B9408CCD84E4370970 /* AudioStreamTee.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioStreamTee.swift; sourceTree = "<group>"; };
+		718D269B784752C360258A37 /* AudioStreamTeeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioStreamTeeTests.swift; sourceTree = "<group>"; };
 		73406054CF123778E4D54A7D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		74F122AC2B43B33A8EB8F302 /* HotkeyServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyServiceTests.swift; sourceTree = "<group>"; };
 		818B343ACE8392EBD1F499B9 /* AppWorkflowStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppWorkflowStateTests.swift; sourceTree = "<group>"; };
@@ -175,6 +179,7 @@
 				92F781451AFDDB38CC731BC3 /* AppBundleConfigurationTests.swift */,
 				E8ADF2F6428E9D7E0CEC85B6 /* AppCoordinatorTests.swift */,
 				818B343ACE8392EBD1F499B9 /* AppWorkflowStateTests.swift */,
+				718D269B784752C360258A37 /* AudioStreamTeeTests.swift */,
 				523203CAD77C070033D2D969 /* DashScopeASRClientTests.swift */,
 				FB9C1187216CA1961DA4E3CA /* DashScopeASREventsTests.swift */,
 				39FEE8656855FC23E4EBDCFC /* DraftStoreTests.swift */,
@@ -229,6 +234,7 @@
 			isa = PBXGroup;
 			children = (
 				594A3AA3FEC9E5683492804A /* AudioRecorder.swift */,
+				7064E5B9408CCD84E4370970 /* AudioStreamTee.swift */,
 				CC87AF0BBC2E43BA0B8343B5 /* DashScopeASRClient.swift */,
 				1257E16BDD348F7EB27D205A /* DashScopeASREvents.swift */,
 				C1534E5E9DDD773FBEA73278 /* DraftStore.swift */,
@@ -373,6 +379,7 @@
 				F1EE67CB8155BA2EB09AE8B2 /* AppModels.swift in Sources */,
 				791AEC241F97C9729F9FFB3F /* AppWorkflowState.swift in Sources */,
 				E21A6656332537B51DC2B1DC /* AudioRecorder.swift in Sources */,
+				7C35B5D5AB2F509E8CE2D59F /* AudioStreamTee.swift in Sources */,
 				7120BCB6FD272B2137651245 /* DashScopeASRClient.swift in Sources */,
 				941593681433CDD5A5773636 /* DashScopeASREvents.swift in Sources */,
 				54E520B79F54CD78AAC77C67 /* DraftHistoryView.swift in Sources */,
@@ -404,6 +411,7 @@
 				88352D4BAF22EC0912F87D86 /* AppBundleConfigurationTests.swift in Sources */,
 				DAF33041F7B1FFFA86625017 /* AppCoordinatorTests.swift in Sources */,
 				CD255FBC45259D465861F8D6 /* AppWorkflowStateTests.swift in Sources */,
+				8D5E856947CEF77620EFC9DE /* AudioStreamTeeTests.swift in Sources */,
 				B125ADBA6515C6C522C2EFC1 /* DashScopeASRClientTests.swift in Sources */,
 				58214158D3DE70361F0C4C06 /* DashScopeASREventsTests.swift in Sources */,
 				479AE80D0472F97B1220EC36 /* DraftStoreTests.swift in Sources */,
