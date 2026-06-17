@@ -15,6 +15,7 @@
 		36893ABB441B405C77D9C456 /* FailedRecordingStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AC2CC8A3EE453C158DFAD0E /* FailedRecordingStoreTests.swift */; };
 		3BBEB7EAA8B60028926FE14A /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C29DEE0BE83FD4C564065A25 /* SettingsWindowController.swift */; };
 		479AE80D0472F97B1220EC36 /* DraftStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39FEE8656855FC23E4EBDCFC /* DraftStoreTests.swift */; };
+		5105FC9AF49EF70B8D5FA739 /* FailedRecordingRetryServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D0536D77A326EE6F27F0253 /* FailedRecordingRetryServiceTests.swift */; };
 		54E520B79F54CD78AAC77C67 /* DraftHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32E38AC428BA7E71BEE01750 /* DraftHistoryView.swift */; };
 		58214158D3DE70361F0C4C06 /* DashScopeASREventsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB9C1187216CA1961DA4E3CA /* DashScopeASREventsTests.swift */; };
 		5AEBE149740BA4885A9049EC /* FocusDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC53940313E5C0DFB04522AB /* FocusDetectorTests.swift */; };
@@ -51,6 +52,7 @@
 		E01704B76E1A9FE6E1C4AE72 /* HotkeyServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74F122AC2B43B33A8EB8F302 /* HotkeyServiceTests.swift */; };
 		E1D766478FADC79B9A6EF996 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2049A51D0118ED81F4DC82DE /* Assets.xcassets */; };
 		E21A6656332537B51DC2B1DC /* AudioRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 594A3AA3FEC9E5683492804A /* AudioRecorder.swift */; };
+		E42A11BF48A425DCDBB7654B /* FailedRecordingRetryService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FD5E18AB856D10E83968382 /* FailedRecordingRetryService.swift */; };
 		ECD362E07FFD2381D5E30B2C /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2BA496C815DF758D3F98510 /* KeychainService.swift */; };
 		F1EE67CB8155BA2EB09AE8B2 /* AppModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40E1167C8DDD473C8C44D84F /* AppModels.swift */; };
 		F7D8F3D4D5BFA4CFD784A260 /* AppError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B40000F297BBBF70C467732 /* AppError.swift */; };
@@ -82,6 +84,8 @@
 		39FEE8656855FC23E4EBDCFC /* DraftStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraftStoreTests.swift; sourceTree = "<group>"; };
 		3E4934C55DE91C7CC2BDF6AC /* TextInsertionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextInsertionService.swift; sourceTree = "<group>"; };
 		40E1167C8DDD473C8C44D84F /* AppModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModels.swift; sourceTree = "<group>"; };
+		4D0536D77A326EE6F27F0253 /* FailedRecordingRetryServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FailedRecordingRetryServiceTests.swift; sourceTree = "<group>"; };
+		4FD5E18AB856D10E83968382 /* FailedRecordingRetryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FailedRecordingRetryService.swift; sourceTree = "<group>"; };
 		523203CAD77C070033D2D969 /* DashScopeASRClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashScopeASRClientTests.swift; sourceTree = "<group>"; };
 		52B42A0D9A138AB71A2EE218 /* TextPolishMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPolishMode.swift; sourceTree = "<group>"; };
 		57C239C13D816859635ADE02 /* AppWorkflowState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppWorkflowState.swift; sourceTree = "<group>"; };
@@ -185,6 +189,7 @@
 				39FEE8656855FC23E4EBDCFC /* DraftStoreTests.swift */,
 				952A9C8C34BD8984C32994B9 /* FailedRecordingAudioStoreTests.swift */,
 				206946E231179D8E0839DAEC /* FailedRecordingModelsTests.swift */,
+				4D0536D77A326EE6F27F0253 /* FailedRecordingRetryServiceTests.swift */,
 				5AC2CC8A3EE453C158DFAD0E /* FailedRecordingStoreTests.swift */,
 				AC53940313E5C0DFB04522AB /* FocusDetectorTests.swift */,
 				74F122AC2B43B33A8EB8F302 /* HotkeyServiceTests.swift */,
@@ -239,6 +244,7 @@
 				1257E16BDD348F7EB27D205A /* DashScopeASREvents.swift */,
 				C1534E5E9DDD773FBEA73278 /* DraftStore.swift */,
 				6C6694440212E6102EA6965A /* FailedRecordingAudioStore.swift */,
+				4FD5E18AB856D10E83968382 /* FailedRecordingRetryService.swift */,
 				BD35F75E63678AE8AC724389 /* FailedRecordingStore.swift */,
 				CCCAC6989F0693D4FBC9860E /* FocusDetector.swift */,
 				D124C2093176321F2F1A04E7 /* HotkeyService.swift */,
@@ -386,6 +392,7 @@
 				14C4422508D6A46A95B2A5AC /* DraftStore.swift in Sources */,
 				6F537A51B2AF71DA773B4A52 /* FailedRecordingAudioStore.swift in Sources */,
 				C7A24864CE3A4ECA957977AE /* FailedRecordingModels.swift in Sources */,
+				E42A11BF48A425DCDBB7654B /* FailedRecordingRetryService.swift in Sources */,
 				A1FF0F20D1F9D7471143E9E4 /* FailedRecordingStore.swift in Sources */,
 				97F029E58A6DD957911B3771 /* FocusDetector.swift in Sources */,
 				02476AF9F0774FEB43895031 /* FushengApp.swift in Sources */,
@@ -417,6 +424,7 @@
 				479AE80D0472F97B1220EC36 /* DraftStoreTests.swift in Sources */,
 				5F4674ED8E38A938FD2199D1 /* FailedRecordingAudioStoreTests.swift in Sources */,
 				5F3F1AA769627C8432B0514E /* FailedRecordingModelsTests.swift in Sources */,
+				5105FC9AF49EF70B8D5FA739 /* FailedRecordingRetryServiceTests.swift in Sources */,
 				36893ABB441B405C77D9C456 /* FailedRecordingStoreTests.swift in Sources */,
 				5AEBE149740BA4885A9049EC /* FocusDetectorTests.swift in Sources */,
 				E01704B76E1A9FE6E1C4AE72 /* HotkeyServiceTests.swift in Sources */,
