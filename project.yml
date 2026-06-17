@@ -59,6 +59,7 @@ targets:
           copy_item "Fusheng/App/AppLaunchDelegate.swift"
           copy_item "Fusheng/App/SettingsWindowController.swift"
           copy_item "Fusheng/UI/RootMenuContent.swift"
+          copy_item "Fusheng/UI/FailedRecordingView.swift"
           copy_item "Fusheng/UI/SettingsView.swift"
           copy_item "Fusheng/Services/HotkeyService.swift"
           copy_item "Fusheng/UI/RecordingOverlayView.swift"

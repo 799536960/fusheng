@@ -41,6 +41,46 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(source.contains("草稿历史"))
     }
 
+    func testRootMenuOpensFailedRecordingWindowRefreshesAndActivatesWindow() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/UI/RootMenuContent.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("Button(\"打开失败录音\""))
+        XCTAssertTrue(source.contains("openFailedRecordingWindow()"))
+        XCTAssertTrue(source.contains("NotificationCenter.default.post(name: .failedRecordingQueueDidChange"))
+        XCTAssertTrue(source.contains("bringWindowToFront(matching:"))
+        XCTAssertTrue(source.contains("失败录音"))
+    }
+
+    func testAppCreatesFailedRecordingWindowAndModelContainer() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/App/FushengApp.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("ModelContainer(for: DraftRecord.self, FailedRecordingRecord.self)"))
+        XCTAssertTrue(source.contains("Window(\"失败录音\", id: \"failed-recordings\")"))
+        XCTAssertTrue(source.contains("FailedRecordingView("))
+        XCTAssertTrue(source.contains("FailedRecordingStore("))
+        XCTAssertTrue(source.contains("FailedRecordingRetryService("))
+    }
+
+    func testFailedRecordingViewShowsRetryAndDeleteActions() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/UI/FailedRecordingView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("struct FailedRecordingView"))
+        XCTAssertTrue(source.contains("重新请求"))
+        XCTAssertTrue(source.contains("删除"))
+        XCTAssertTrue(source.contains("音频文件缺失"))
+        XCTAssertTrue(source.contains(".failedRecordingQueueDidChange"))
+        XCTAssertTrue(source.contains("retryService.retry"))
+    }
+
     func testSettingsViewUsesCustomSingleKeyRecorder() throws {
         let source = try String(
             contentsOf: try sourceSnapshotURL("Fusheng/UI/SettingsView.swift"),

@@ -5,7 +5,6 @@ import SwiftUI
 struct RootMenuContent: View {
     @EnvironmentObject private var coordinator: AppCoordinator
     @Environment(\.openWindow) private var openWindow
-    @Environment(\.openSettings) private var openSettings
     @Query(sort: \DraftRecord.createdAt, order: .reverse) private var drafts: [DraftRecord]
 
     var body: some View {
@@ -37,11 +36,13 @@ struct RootMenuContent: View {
 
             Divider()
 
-            Button("打开草稿历史") {
-                openWindow(id: "draft-history")
-            }
+            Button("打开草稿历史", action: openDraftHistoryWindow)
 
-            Button("打开设置", action: openSettingsWindow)
+            Button("打开失败录音", action: openFailedRecordingWindow)
+
+            Button("打开设置") {
+                SettingsWindowController.shared.show()
+            }
 
             Button("退出") {
                 NSApp.terminate(nil)
@@ -55,22 +56,31 @@ struct RootMenuContent: View {
         NSPasteboard.general.setString(text, forType: .string)
     }
 
-    private func openSettingsWindow() {
-        openSettings()
-        bringSettingsWindowToFront()
+    private func openDraftHistoryWindow() {
+        NotificationCenter.default.post(name: .draftHistoryDidChange, object: nil)
+        openWindow(id: "draft-history")
+        bringWindowToFront(matching: { $0.title.contains("草稿历史") })
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            bringSettingsWindowToFront()
+            NotificationCenter.default.post(name: .draftHistoryDidChange, object: nil)
+            bringWindowToFront(matching: { $0.title.contains("草稿历史") })
         }
     }
 
-    private func bringSettingsWindowToFront() {
+    private func openFailedRecordingWindow() {
+        NotificationCenter.default.post(name: .failedRecordingQueueDidChange, object: nil)
+        openWindow(id: "failed-recordings")
+        bringWindowToFront(matching: { $0.title.contains("失败录音") })
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            NotificationCenter.default.post(name: .failedRecordingQueueDidChange, object: nil)
+            bringWindowToFront(matching: { $0.title.contains("失败录音") })
+        }
+    }
+
+    private func bringWindowToFront(matching predicate: (NSWindow) -> Bool) {
         NSApp.activate()
 
         NSApp.windows
-            .filter { window in
-                window.title.localizedCaseInsensitiveContains("settings")
-                    || window.title.contains("设置")
-            }
+            .filter(predicate)
             .forEach { window in
                 window.makeKeyAndOrderFront(nil)
                 window.orderFrontRegardless()
