@@ -26,6 +26,8 @@ targets:
         INFOPLIST_FILE: Fusheng/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: Fusheng/Fusheng.entitlements
         CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 24482TH5FJ
+        CODE_SIGN_IDENTITY: Apple Development
         ENABLE_HARDENED_RUNTIME: YES
         ENABLE_RESOURCE_ACCESS_AUDIO_INPUT: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -68,3 +70,6 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fusheng.voiceinput.tests
         GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 24482TH5FJ
+        CODE_SIGN_IDENTITY: Apple Development

@@ -1,5 +1,12 @@
 import Foundation
 
+extension Notification.Name {
+    static let audioLevelDidChange = Notification.Name("FushengAudioLevelDidChange")
+    static let draftHistoryDidChange = Notification.Name("FushengDraftHistoryDidChange")
+    static let speechHotkeyDidChange = Notification.Name("FushengSpeechHotkeyDidChange")
+    static let failedRecordingQueueDidChange = Notification.Name("FushengFailedRecordingQueueDidChange")
+}
+
 enum DeliveryResult: Equatable {
     case pasted
     case savedDraft
