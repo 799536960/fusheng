@@ -3,7 +3,7 @@ import XCTest
 
 final class AppBundleConfigurationTests: XCTestCase {
     func testInfoPlistDefinesLaunchableBundleMetadata() throws {
-        let infoPlist = projectRoot.appending(path: "Fusheng/Resources/Info.plist")
+        let infoPlist = try sourceSnapshotURL("Fusheng/Resources/Info.plist")
         let data = try Data(contentsOf: infoPlist)
         let plist = try XCTUnwrap(PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any])
 
@@ -12,39 +12,259 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertEqual(plist["CFBundleName"] as? String, "$(PRODUCT_NAME)")
         XCTAssertEqual(plist["CFBundlePackageType"] as? String, "APPL")
         XCTAssertEqual(plist["CFBundleLocalizations"] as? [String], ["zh-Hans"])
+        XCTAssertNil(plist["LSUIElement"])
     }
 
-    func testRootMenuUsesOpenSettingsAndActivatesTheApp() throws {
+    func testRootMenuUsesExplicitSettingsWindowController() throws {
         let source = try String(
-            contentsOf: projectRoot.appending(path: "Fusheng/UI/RootMenuContent.swift"),
+            contentsOf: try sourceSnapshotURL("Fusheng/UI/RootMenuContent.swift"),
             encoding: .utf8
         )
 
-        XCTAssertTrue(source.contains("@Environment(\\.openSettings)"))
-        XCTAssertTrue(source.contains("openSettings()"))
-        XCTAssertTrue(source.contains("NSApp.activate()"))
-        XCTAssertTrue(source.contains("makeKeyAndOrderFront(nil)"))
-        XCTAssertTrue(source.contains("orderFrontRegardless()"))
-        XCTAssertTrue(source.contains("DispatchQueue.main.asyncAfter"))
+        XCTAssertTrue(source.contains("Button(\"打开设置\")"))
+        XCTAssertTrue(source.contains("SettingsWindowController.shared.show()"))
+        XCTAssertFalse(source.contains("@Environment(\\.openSettings)"))
+        XCTAssertFalse(source.contains("openSettings()"))
         XCTAssertFalse(source.contains("showSettingsWindow"))
-        XCTAssertFalse(source.contains("activate(ignoringOtherApps: true)"))
         XCTAssertFalse(source.contains("SettingsLink"))
     }
 
-    func testSettingsViewUsesGuidedShortcutRecorder() throws {
+    func testRootMenuOpensDraftHistoryRefreshesAndActivatesWindow() throws {
         let source = try String(
-            contentsOf: projectRoot.appending(path: "Fusheng/UI/SettingsView.swift"),
+            contentsOf: try sourceSnapshotURL("Fusheng/UI/RootMenuContent.swift"),
             encoding: .utf8
         )
 
-        XCTAssertTrue(source.contains("ShortcutRecorderField(name: .voiceInput)"))
-        XCTAssertTrue(source.contains("KeyboardShortcuts.RecorderCocoa(for: name)"))
-        XCTAssertTrue(source.contains("必须同时按下修饰键和普通键"))
+        XCTAssertTrue(source.contains("openDraftHistoryWindow()"))
+        XCTAssertTrue(source.contains("NotificationCenter.default.post(name: .draftHistoryDidChange"))
+        XCTAssertTrue(source.contains("bringWindowToFront(matching:"))
+        XCTAssertTrue(source.contains("草稿历史"))
+    }
+
+    func testSettingsViewUsesCustomSingleKeyRecorder() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/UI/SettingsView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("HotkeyRecorderButton"))
+        XCTAssertTrue(source.contains("按下任意单键"))
+        XCTAssertTrue(source.contains("settings.holdKey = hotkey"))
+        XCTAssertTrue(source.contains(".frame(maxWidth: .infinity"))
+        XCTAssertTrue(source.contains("Button {"))
+        XCTAssertTrue(source.contains(".buttonStyle(.plain)"))
+        XCTAssertFalse(source.contains(".onTapGesture"))
+        XCTAssertTrue(source.contains(".accessibilityAddTraits(.isButton)"))
+        XCTAssertTrue(source.contains("HotkeyKeyCaptureView"))
+        XCTAssertTrue(source.contains("makeFirstResponder(nsView)"))
+        XCTAssertTrue(source.contains("override func keyDown(with event: NSEvent)"))
+        XCTAssertTrue(source.contains("SpeechHotkey.from(event: event)"))
+        XCTAssertTrue(source.contains("Button(\"打开权限设置\")"))
+        XCTAssertTrue(source.contains("openAccessibilitySettings()"))
+        XCTAssertTrue(source.contains("Privacy_Accessibility"))
+        XCTAssertFalse(source.contains("NSEvent.addLocalMonitorForEvents(matching: .keyDown"))
+        XCTAssertTrue(source.contains("辅助功能/输入监控中允许浮声"))
         XCTAssertFalse(source.contains("KeyboardShortcuts.Recorder(\"语音输入\""))
+        XCTAssertFalse(source.contains("Picker(\"长按触发键\""))
+        XCTAssertFalse(source.contains("Picker(\"触发方式\""))
+    }
+
+    func testSettingsViewLoadsSavedAPIKeyOnAppear() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/UI/SettingsView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("try keychain.saveAPIKey(apiKey)"))
+        XCTAssertTrue(source.contains("SecureField(\"API Key\", text: $apiKey)"))
+        XCTAssertTrue(source.contains("loadSavedAPIKey()"))
+        XCTAssertTrue(source.contains("try keychain.loadAPIKey()"))
+        XCTAssertTrue(source.contains("apiKey = savedAPIKey"))
+        XCTAssertTrue(source.contains("savedAPIKeySuffix"))
+        XCTAssertTrue(source.contains("API Key 已加载"))
+    }
+
+    func testSettingsViewShowsMicrophonePermissionStatusAndActions() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/UI/SettingsView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("import AVFoundation"))
+        XCTAssertTrue(source.contains("Section(\"权限\")"))
+        XCTAssertTrue(source.contains("LabeledContent(\"麦克风\")"))
+        XCTAssertTrue(source.contains("MicrophonePermissionStatus.current"))
+        XCTAssertTrue(source.contains("AVCaptureDevice.authorizationStatus(for: .audio)"))
+        XCTAssertTrue(source.contains("AVCaptureDevice.requestAccess(for: .audio)"))
+        XCTAssertTrue(source.contains("Button(\"请求麦克风权限\")"))
+        XCTAssertTrue(source.contains("Button(\"打开麦克风权限设置\")"))
+        XCTAssertTrue(source.contains("Privacy_Microphone"))
+        XCTAssertTrue(source.contains("Button(\"刷新权限状态\")"))
+    }
+
+    func testSettingsViewOutputTogglesUseAppStorageBindings() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/UI/SettingsView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("@AppStorage(\"autoPasteEnabled\")"))
+        XCTAssertTrue(source.contains("@AppStorage(\"restoreClipboardEnabled\")"))
+        XCTAssertTrue(source.contains("@AppStorage(\"keepDraftHistoryEnabled\")"))
+        XCTAssertTrue(source.contains("Toggle(\"无输入框时复制到剪贴板\", isOn: $autoPasteEnabled)"))
+        XCTAssertTrue(source.contains("Toggle(\"粘贴后恢复剪贴板\", isOn: $restoreClipboardEnabled)"))
+        XCTAssertTrue(source.contains("Toggle(\"保留历史草稿\", isOn: $keepDraftHistoryEnabled)"))
+        XCTAssertFalse(source.contains("settings.autoPasteEnabled }, set: { settings.autoPasteEnabled"))
+        XCTAssertFalse(source.contains("settings.restoreClipboardEnabled }, set: { settings.restoreClipboardEnabled"))
+        XCTAssertFalse(source.contains("settings.keepDraftHistoryEnabled }, set: { settings.keepDraftHistoryEnabled"))
+    }
+
+    func testHardenedRuntimeAllowsMicrophoneResourceAccess() throws {
+        let entitlementsURL = try projectFileURL("Fusheng/Fusheng.entitlements")
+        let entitlementsData = try Data(contentsOf: entitlementsURL)
+        let entitlements = try XCTUnwrap(PropertyListSerialization.propertyList(from: entitlementsData, format: nil) as? [String: Any])
+        let project = try String(
+            contentsOf: try projectFileURL("Fusheng.xcodeproj/project.pbxproj"),
+            encoding: .utf8
+        )
+
+        XCTAssertEqual(entitlements["com.apple.security.device.audio-input"] as? Bool, true)
+        XCTAssertTrue(project.contains("ENABLE_HARDENED_RUNTIME = YES;"))
+        XCTAssertTrue(project.contains("ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = YES;"))
+    }
+
+    func testProjectYMLPreservesGeneratedProjectRequirements() throws {
+        let source = try String(
+            contentsOf: try projectFileURL("project.yml"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("ENABLE_RESOURCE_ACCESS_AUDIO_INPUT: YES"))
+        XCTAssertTrue(source.contains("Copy source snapshot"))
+        XCTAssertTrue(source.contains("Fusheng/App/FushengApp.swift"))
+        XCTAssertTrue(source.contains("Fusheng/UI/RootMenuContent.swift"))
+        XCTAssertTrue(source.contains("Fusheng.xcodeproj/project.pbxproj"))
+    }
+
+    func testAppStartsHotkeyServiceDuringInitialization() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/App/FushengApp.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("private let hotkeyService: HotkeyService"))
+        XCTAssertTrue(source.contains("service.start()"))
+        XCTAssertFalse(source.contains(".task {\n                    startHotkeyServiceIfNeeded()"))
+    }
+
+    func testAppDoesNotOpenSettingsWindowFromInitialization() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/App/FushengApp.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("if !Self.isRunningTests"))
+        XCTAssertFalse(source.contains("scheduleInitialSettingsWindowOpen()"))
+        XCTAssertFalse(source.contains("DispatchQueue.main.asyncAfter"))
+        XCTAssertFalse(source.contains("SettingsWindowController.shared.show()"))
+    }
+
+    func testAppUsesOnlyManualSettingsWindowController() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/App/FushengApp.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertFalse(source.contains("Settings {"))
+        XCTAssertFalse(source.contains("SettingsView()"))
+    }
+
+    func testAppIconLaunchAndReopenShowSettingsWindow() throws {
+        let appSource = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/App/FushengApp.swift"),
+            encoding: .utf8
+        )
+        let delegateSource = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/App/AppLaunchDelegate.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(appSource.contains("@NSApplicationDelegateAdaptor(AppLaunchDelegate.self)"))
+        XCTAssertTrue(delegateSource.contains("applicationDidFinishLaunching"))
+        XCTAssertTrue(delegateSource.contains("applicationShouldHandleReopen"))
+        XCTAssertTrue(delegateSource.contains("openSettingsWindow()"))
+        XCTAssertTrue(delegateSource.contains("DispatchQueue.main.async"))
+        XCTAssertTrue(delegateSource.contains("SettingsWindowController.shared.show()"))
+        XCTAssertFalse(delegateSource.contains("showSettingsWindow:"))
+    }
+
+    func testSettingsWindowControllerHostsAndRaisesSettingsView() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/App/SettingsWindowController.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("final class SettingsWindowController"))
+        XCTAssertTrue(source.contains("static let shared"))
+        XCTAssertTrue(source.contains("NSHostingController(rootView: SettingsView()"))
+        XCTAssertTrue(source.contains("window.title = \"设置\""))
+        XCTAssertTrue(source.contains("NSApp.setActivationPolicy(.regular)"))
+        XCTAssertTrue(source.contains("NSApp.activate(ignoringOtherApps: true)"))
+        XCTAssertTrue(source.contains("NSApp.activate()"))
+        XCTAssertFalse(source.contains(".activateIgnoringOtherApps"))
+        XCTAssertFalse(source.contains("window.level = .floating"))
+        XCTAssertTrue(source.contains("makeKeyAndOrderFront(nil)"))
+        XCTAssertTrue(source.contains("window.makeMain()"))
+        XCTAssertTrue(source.contains("orderFrontRegardless()"))
+        XCTAssertFalse(source.contains("window.delegate = self"))
+        XCTAssertFalse(source.contains("windowWillClose"))
+        XCTAssertFalse(source.contains("NSApp.setActivationPolicy(.accessory)"))
+    }
+
+    func testHotkeyRegistererUsesEventTapToInterceptSingleKey() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/Services/HotkeyService.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("CGEvent.tapCreate"))
+        XCTAssertTrue(source.contains("CGEventType.keyDown"))
+        XCTAssertTrue(source.contains("CGEventType.keyUp"))
+        XCTAssertTrue(source.contains("return nil"))
+    }
+
+    func testRecordingOverlayUsesGeneratedMicrophoneImageAndWaveform() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/UI/RecordingOverlayView.swift"),
+            encoding: .utf8
+        )
+        let appSource = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/App/FushengApp.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("GeneratedMicrophoneImage"))
+        XCTAssertTrue(source.contains("AudioLevelWaveformView"))
+        XCTAssertTrue(source.contains(".audioLevelDidChange"))
+        XCTAssertTrue(source.contains("configureFloatingOverlayWindow"))
+        XCTAssertTrue(source.contains("panel.ignoresMouseEvents = true"))
+        XCTAssertTrue(source.contains("window.ignoresMouseEvents = true"))
+        XCTAssertFalse(appSource.contains("Window(\"录音状态\""))
+    }
+
+    func testRecordingOverlayShowsThroughoutActiveWorkflow() throws {
+        let source = try String(
+            contentsOf: try projectFileURL("Fusheng/App/AppCoordinator.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("case .recording, .recognizing, .polishing, .delivering:\n            return true"))
+        XCTAssertTrue(source.contains("case .idle, .completed, .failed:\n            return false"))
+        XCTAssertFalse(source.contains("case .idle, .recognizing, .polishing, .delivering, .completed, .failed:\n            return false"))
     }
 
     func testAppIconAssetCatalogIsConfiguredAsAResource() throws {
-        let iconContents = projectRoot.appending(path: "Fusheng/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json")
+        let iconContents = try sourceSnapshotURL("Fusheng/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json")
         XCTAssertTrue(FileManager.default.fileExists(atPath: iconContents.path))
 
         let iconData = try Data(contentsOf: iconContents)
@@ -62,7 +282,7 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertEqual(iconRep.pixelsHigh, 1024)
 
         let project = try String(
-            contentsOf: projectRoot.appending(path: "Fusheng.xcodeproj/project.pbxproj"),
+            contentsOf: try sourceSnapshotURL("Fusheng.xcodeproj/project.pbxproj"),
             encoding: .utf8
         )
         XCTAssertTrue(project.contains("Assets.xcassets"))
@@ -70,9 +290,46 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(project.contains("PBXResourcesBuildPhase"))
     }
 
-    private var projectRoot: URL {
-        URL(fileURLWithPath: #filePath)
+    func testMacAppUsesStableDevelopmentSigningInsteadOfAdHocSigning() throws {
+        let project = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng.xcodeproj/project.pbxproj"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(project.contains("DEVELOPMENT_TEAM = 24482TH5FJ;"))
+        XCTAssertTrue(project.contains("CODE_SIGN_IDENTITY = \"Apple Development\";"))
+        XCTAssertFalse(project.contains("CODE_SIGN_IDENTITY = -;"))
+        XCTAssertTrue(project.contains("ENABLE_HARDENED_RUNTIME = YES;"))
+    }
+
+    private func sourceSnapshotURL(
+        _ path: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> URL {
+        let resourceURL = try XCTUnwrap(
+            Bundle(for: Self.self).resourceURL,
+            "Missing test bundle resources",
+            file: file,
+            line: line
+        )
+        return resourceURL.appending(path: "SourceSnapshot").appending(path: path)
+    }
+
+    private func projectFileURL(
+        _ path: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) throws -> URL {
+        let snapshotURL = try sourceSnapshotURL(path, file: file, line: line)
+        if FileManager.default.fileExists(atPath: snapshotURL.path) {
+            return snapshotURL
+        }
+
+        let testFileURL = URL(filePath: String(describing: file))
+        return testFileURL
             .deletingLastPathComponent()
             .deletingLastPathComponent()
+            .appending(path: path)
     }
 }

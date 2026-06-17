@@ -27,6 +27,7 @@ targets:
         CODE_SIGN_ENTITLEMENTS: Fusheng/Fusheng.entitlements
         CODE_SIGN_STYLE: Automatic
         ENABLE_HARDENED_RUNTIME: YES
+        ENABLE_RESOURCE_ACCESS_AUDIO_INPUT: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
   FushengTests:
     type: bundle.unit-test
@@ -35,6 +36,34 @@ targets:
       - FushengTests
     dependencies:
       - target: Fusheng
+    preBuildScripts:
+      - name: Copy source snapshot
+        basedOnDependencyAnalysis: false
+        script: |
+          set -euo pipefail
+
+          DESTINATION="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/SourceSnapshot"
+          rm -rf "$DESTINATION"
+          mkdir -p "$DESTINATION"
+
+          copy_item() {
+            source_path="$SRCROOT/$1"
+            destination_path="$DESTINATION/$1"
+            mkdir -p "$(dirname "$destination_path")"
+            /usr/bin/ditto "$source_path" "$destination_path"
+          }
+
+          copy_item "Fusheng/App/FushengApp.swift"
+          copy_item "Fusheng/App/AppLaunchDelegate.swift"
+          copy_item "Fusheng/App/SettingsWindowController.swift"
+          copy_item "Fusheng/UI/RootMenuContent.swift"
+          copy_item "Fusheng/UI/SettingsView.swift"
+          copy_item "Fusheng/Services/HotkeyService.swift"
+          copy_item "Fusheng/UI/RecordingOverlayView.swift"
+          copy_item "Fusheng/Resources/Info.plist"
+          copy_item "Fusheng/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json"
+          copy_item "Fusheng/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png"
+          copy_item "Fusheng.xcodeproj/project.pbxproj"
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.fusheng.voiceinput.tests
