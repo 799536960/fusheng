@@ -12,6 +12,7 @@
 		0E9E0809D481E253A9CD4AA5 /* SanityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 371D87D273B7EDCB67C23105 /* SanityTests.swift */; };
 		14C4422508D6A46A95B2A5AC /* DraftStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1534E5E9DDD773FBEA73278 /* DraftStore.swift */; };
 		224DD22CBE88952D2A56A472 /* AppLaunchDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7DDD01C89E0BCAB882BA0C6 /* AppLaunchDelegate.swift */; };
+		36893ABB441B405C77D9C456 /* FailedRecordingStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AC2CC8A3EE453C158DFAD0E /* FailedRecordingStoreTests.swift */; };
 		3BBEB7EAA8B60028926FE14A /* SettingsWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C29DEE0BE83FD4C564065A25 /* SettingsWindowController.swift */; };
 		479AE80D0472F97B1220EC36 /* DraftStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39FEE8656855FC23E4EBDCFC /* DraftStoreTests.swift */; };
 		54E520B79F54CD78AAC77C67 /* DraftHistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32E38AC428BA7E71BEE01750 /* DraftHistoryView.swift */; };
@@ -29,6 +30,7 @@
 		95463C362DC81DADC667E5A6 /* TextPolishClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9BC2793019DD0E13C7ED36 /* TextPolishClientTests.swift */; };
 		96A71E3324DEF045F9832DD9 /* KeychainServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35B542AFD912F27FBB99CD62 /* KeychainServiceTests.swift */; };
 		97F029E58A6DD957911B3771 /* FocusDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCCAC6989F0693D4FBC9860E /* FocusDetector.swift */; };
+		A1FF0F20D1F9D7471143E9E4 /* FailedRecordingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD35F75E63678AE8AC724389 /* FailedRecordingStore.swift */; };
 		AB7BF4BAE198A6B160307C74 /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA3E6FAB4AD61CDC0BD553FF /* AppCoordinator.swift */; };
 		AC1A545427B898CE5578C82A /* TriggerMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85B70C9798FC76920F5FA4DE /* TriggerMode.swift */; };
 		B125ADBA6515C6C522C2EFC1 /* DashScopeASRClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 523203CAD77C070033D2D969 /* DashScopeASRClientTests.swift */; };
@@ -80,6 +82,7 @@
 		52B42A0D9A138AB71A2EE218 /* TextPolishMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPolishMode.swift; sourceTree = "<group>"; };
 		57C239C13D816859635ADE02 /* AppWorkflowState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppWorkflowState.swift; sourceTree = "<group>"; };
 		594A3AA3FEC9E5683492804A /* AudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioRecorder.swift; sourceTree = "<group>"; };
+		5AC2CC8A3EE453C158DFAD0E /* FailedRecordingStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FailedRecordingStoreTests.swift; sourceTree = "<group>"; };
 		6B40000F297BBBF70C467732 /* AppError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppError.swift; sourceTree = "<group>"; };
 		73406054CF123778E4D54A7D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		74F122AC2B43B33A8EB8F302 /* HotkeyServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyServiceTests.swift; sourceTree = "<group>"; };
@@ -91,6 +94,7 @@
 		AA3E6FAB4AD61CDC0BD553FF /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
 		AC13D3B3C1CF10236F587BD2 /* ServiceProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceProtocols.swift; sourceTree = "<group>"; };
 		AC53940313E5C0DFB04522AB /* FocusDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusDetectorTests.swift; sourceTree = "<group>"; };
+		BD35F75E63678AE8AC724389 /* FailedRecordingStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FailedRecordingStore.swift; sourceTree = "<group>"; };
 		C1534E5E9DDD773FBEA73278 /* DraftStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DraftStore.swift; sourceTree = "<group>"; };
 		C29DEE0BE83FD4C564065A25 /* SettingsWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindowController.swift; sourceTree = "<group>"; };
 		CC87AF0BBC2E43BA0B8343B5 /* DashScopeASRClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashScopeASRClient.swift; sourceTree = "<group>"; };
@@ -171,6 +175,7 @@
 				FB9C1187216CA1961DA4E3CA /* DashScopeASREventsTests.swift */,
 				39FEE8656855FC23E4EBDCFC /* DraftStoreTests.swift */,
 				206946E231179D8E0839DAEC /* FailedRecordingModelsTests.swift */,
+				5AC2CC8A3EE453C158DFAD0E /* FailedRecordingStoreTests.swift */,
 				AC53940313E5C0DFB04522AB /* FocusDetectorTests.swift */,
 				74F122AC2B43B33A8EB8F302 /* HotkeyServiceTests.swift */,
 				35B542AFD912F27FBB99CD62 /* KeychainServiceTests.swift */,
@@ -222,6 +227,7 @@
 				CC87AF0BBC2E43BA0B8343B5 /* DashScopeASRClient.swift */,
 				1257E16BDD348F7EB27D205A /* DashScopeASREvents.swift */,
 				C1534E5E9DDD773FBEA73278 /* DraftStore.swift */,
+				BD35F75E63678AE8AC724389 /* FailedRecordingStore.swift */,
 				CCCAC6989F0693D4FBC9860E /* FocusDetector.swift */,
 				D124C2093176321F2F1A04E7 /* HotkeyService.swift */,
 				F2BA496C815DF758D3F98510 /* KeychainService.swift */,
@@ -366,6 +372,7 @@
 				54E520B79F54CD78AAC77C67 /* DraftHistoryView.swift in Sources */,
 				14C4422508D6A46A95B2A5AC /* DraftStore.swift in Sources */,
 				C7A24864CE3A4ECA957977AE /* FailedRecordingModels.swift in Sources */,
+				A1FF0F20D1F9D7471143E9E4 /* FailedRecordingStore.swift in Sources */,
 				97F029E58A6DD957911B3771 /* FocusDetector.swift in Sources */,
 				02476AF9F0774FEB43895031 /* FushengApp.swift in Sources */,
 				C7C3FB1FF5702F5BAA9DFC8E /* HotkeyService.swift in Sources */,
@@ -394,6 +401,7 @@
 				58214158D3DE70361F0C4C06 /* DashScopeASREventsTests.swift in Sources */,
 				479AE80D0472F97B1220EC36 /* DraftStoreTests.swift in Sources */,
 				5F3F1AA769627C8432B0514E /* FailedRecordingModelsTests.swift in Sources */,
+				36893ABB441B405C77D9C456 /* FailedRecordingStoreTests.swift in Sources */,
 				5AEBE149740BA4885A9049EC /* FocusDetectorTests.swift in Sources */,
 				E01704B76E1A9FE6E1C4AE72 /* HotkeyServiceTests.swift in Sources */,
 				96A71E3324DEF045F9832DD9 /* KeychainServiceTests.swift in Sources */,
