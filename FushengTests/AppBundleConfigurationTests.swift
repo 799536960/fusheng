@@ -159,6 +159,39 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertFalse(source.contains("settings.keepDraftHistoryEnabled }, set: { settings.keepDraftHistoryEnabled"))
     }
 
+    func testSettingsViewContainsPolishStrategyNavigation() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/UI/SettingsView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("NavigationSplitView"))
+        XCTAssertTrue(source.contains("基础设置"))
+        XCTAssertTrue(source.contains("整理策略"))
+        XCTAssertTrue(source.contains("PolishStrategySettingsView()"))
+    }
+
+    func testPolishStrategySettingsViewContainsEditorResetAndTestAreas() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/UI/PolishStrategySettingsView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("struct PolishStrategySettingsView"))
+        XCTAssertTrue(source.contains("固定安全边界"))
+        XCTAssertTrue(source.contains("模式策略"))
+        XCTAssertTrue(source.contains("额外约束"))
+        XCTAssertTrue(source.contains("测试整理效果"))
+        XCTAssertTrue(source.contains("保存策略"))
+        XCTAssertTrue(source.contains("恢复当前模式默认"))
+        XCTAssertTrue(source.contains("恢复全部默认"))
+        XCTAssertTrue(source.contains("confirmationDialog"))
+        XCTAssertTrue(source.contains("TextPolishPrompt.safetyBoundary"))
+        XCTAssertTrue(source.contains("polisher.polish"))
+        XCTAssertFalse(source.contains("copyToClipboard"))
+        XCTAssertFalse(source.contains("saveDraft"))
+    }
+
     func testHardenedRuntimeAllowsMicrophoneResourceAccess() throws {
         let entitlementsURL = try projectFileURL("Fusheng/Fusheng.entitlements")
         let entitlementsData = try Data(contentsOf: entitlementsURL)

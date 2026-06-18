@@ -61,6 +61,8 @@ targets:
           copy_item "Fusheng/UI/RootMenuContent.swift"
           copy_item "Fusheng/UI/FailedRecordingView.swift"
           copy_item "Fusheng/UI/SettingsView.swift"
+          copy_item "Fusheng/UI/PolishStrategySettingsView.swift"
+          copy_item "Fusheng/Core/TextPolishStrategy.swift"
           copy_item "Fusheng/Services/HotkeyService.swift"
           copy_item "Fusheng/UI/RecordingOverlayView.swift"
           copy_item "Fusheng/Resources/Info.plist"
