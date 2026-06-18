@@ -55,6 +55,28 @@ final class FailedRecordingRetryServiceTests: XCTestCase {
         XCTAssertEqual(failedStore.deletedIDs, [failedStore.snapshot.id])
     }
 
+    func testRetryUsesStrategyForFailedSnapshotMode() async {
+        let conciseStrategy = TextPolishStrategy.default(for: .concise).with {
+            $0.isCustomEnabled = true
+            $0.modeInstruction = "压缩成一句话，但保留否定词。"
+            $0.extraInstructions = "不要改变对象。"
+        }
+        let settings = RetryFakeSettings(polishMode: .professional)
+        settings.savePolishStrategy(conciseStrategy, for: .concise)
+        let failedStore = MemoryFailedRecordingStore(snapshot: makeSnapshot(mode: .concise, stage: .polish, rawASRText: "已有识别文本"))
+        let polisher = RetryFakePolisher(text: "重新整理文本")
+        let service = makeService(
+            failedStore: failedStore,
+            audioStore: MemoryRetryAudioStore(),
+            polisher: polisher,
+            settings: settings
+        )
+
+        await service.retry(id: failedStore.snapshot.id)
+
+        XCTAssertEqual(polisher.strategies, [conciseStrategy])
+    }
+
     func testRetryFailureKeepsRecordAndUpdatesError() async {
         let failedStore = MemoryFailedRecordingStore(snapshot: makeSnapshot(stage: .polish, rawASRText: "已有识别文本"))
         let service = makeService(
@@ -95,7 +117,8 @@ final class FailedRecordingRetryServiceTests: XCTestCase {
         asrClient: ASRRecognizing = CountingASR(text: "重新识别文本"),
         polisher: TextPolishing = RetryFakePolisher(text: "重新整理文本"),
         inserter: TextInserting = RetryFakeInserter(),
-        drafts: DraftStoring? = nil
+        drafts: DraftStoring? = nil,
+        settings: SettingsProviding = RetryFakeSettings()
     ) -> FailedRecordingRetryService {
         let resolvedDrafts = drafts ?? RetryFakeDraftStore()
 
@@ -106,8 +129,58 @@ final class FailedRecordingRetryServiceTests: XCTestCase {
             asrClient: asrClient,
             textPolisher: polisher,
             textInserter: inserter,
-            draftStore: resolvedDrafts
+            draftStore: resolvedDrafts,
+            settings: settings
         )
+    }
+}
+
+private final class RetryFakeSettings: SettingsProviding {
+    var triggerMode: TriggerMode
+    var holdKey: SpeechHotkey
+    var asrModel: String
+    var polishModel: String
+    var polishMode: TextPolishMode
+    var autoPasteEnabled: Bool
+    var restoreClipboardEnabled: Bool
+    var keepDraftHistoryEnabled: Bool
+    private var strategies: [TextPolishMode: TextPolishStrategy]
+
+    init(
+        triggerMode: TriggerMode = .toggle,
+        holdKey: SpeechHotkey = .f9,
+        asrModel: String = "asr-model",
+        polishModel: String = "polish-model",
+        polishMode: TextPolishMode = .clean,
+        autoPasteEnabled: Bool = true,
+        restoreClipboardEnabled: Bool = true,
+        keepDraftHistoryEnabled: Bool = true
+    ) {
+        self.triggerMode = triggerMode
+        self.holdKey = holdKey
+        self.asrModel = asrModel
+        self.polishModel = polishModel
+        self.polishMode = polishMode
+        self.autoPasteEnabled = autoPasteEnabled
+        self.restoreClipboardEnabled = restoreClipboardEnabled
+        self.keepDraftHistoryEnabled = keepDraftHistoryEnabled
+        self.strategies = [:]
+    }
+
+    func polishStrategy(for mode: TextPolishMode) -> TextPolishStrategy {
+        strategies[mode] ?? .default(for: mode)
+    }
+
+    func savePolishStrategy(_ strategy: TextPolishStrategy, for mode: TextPolishMode) {
+        strategies[mode] = strategy.normalized(for: mode)
+    }
+
+    func resetPolishStrategy(for mode: TextPolishMode) {
+        strategies.removeValue(forKey: mode)
+    }
+
+    func resetAllPolishStrategies() {
+        strategies.removeAll()
     }
 }
 
@@ -236,18 +309,28 @@ private final class RetryFakePolisher: TextPolishing {
     let text: String
     let error: Error?
     private(set) var rawTexts: [String] = []
+    private(set) var strategies: [TextPolishStrategy] = []
 
     init(text: String = "重新整理文本", error: Error? = nil) {
         self.text = text
         self.error = error
     }
 
-    func polish(rawText: String, mode: TextPolishMode, model: String, apiKey: String) async throws -> String {
+    func polish(rawText: String, strategy: TextPolishStrategy, model: String, apiKey: String) async throws -> String {
         rawTexts.append(rawText)
+        strategies.append(strategy)
         if let error {
             throw error
         }
         return text
+    }
+}
+
+private extension TextPolishStrategy {
+    func with(_ update: (inout TextPolishStrategy) -> Void) -> TextPolishStrategy {
+        var copy = self
+        update(&copy)
+        return copy
     }
 }
 
@@ -315,12 +398,16 @@ private enum RetryFakeError: Error {
     case polishFailed
 }
 
-private func makeSnapshot(stage: FailedRecordingStage, rawASRText: String) -> FailedRecordingSnapshot {
+private func makeSnapshot(
+    mode: TextPolishMode = .clean,
+    stage: FailedRecordingStage,
+    rawASRText: String
+) -> FailedRecordingSnapshot {
     FailedRecordingSnapshot(
         id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
         createdAt: Date(timeIntervalSince1970: 10),
         sourceAppName: "Notes",
-        mode: .clean,
+        mode: mode,
         asrModel: "asr-model",
         polishModel: "polish-model",
         failureStage: stage,

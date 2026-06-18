@@ -10,6 +10,7 @@ final class FailedRecordingRetryService: ObservableObject {
     private let textPolisher: TextPolishing
     private let textInserter: TextInserting
     private let draftStore: DraftStoring
+    private let settings: SettingsProviding
 
     init(
         apiKeyProvider: APIKeyProviding,
@@ -18,7 +19,8 @@ final class FailedRecordingRetryService: ObservableObject {
         asrClient: ASRRecognizing,
         textPolisher: TextPolishing,
         textInserter: TextInserting,
-        draftStore: DraftStoring
+        draftStore: DraftStoring,
+        settings: SettingsProviding = SettingsStore()
     ) {
         self.apiKeyProvider = apiKeyProvider
         self.failedRecordingStore = failedRecordingStore
@@ -27,6 +29,7 @@ final class FailedRecordingRetryService: ObservableObject {
         self.textPolisher = textPolisher
         self.textInserter = textInserter
         self.draftStore = draftStore
+        self.settings = settings
     }
 
     func retry(id: UUID) async {
@@ -52,7 +55,7 @@ final class FailedRecordingRetryService: ObservableObject {
             let rawText = try await rawTextForRetry(snapshot: snapshot, apiKey: apiKey)
             let polishedText = try await textPolisher.polish(
                 rawText: rawText,
-                mode: snapshot.mode,
+                strategy: settings.polishStrategy(for: snapshot.mode),
                 model: snapshot.polishModel,
                 apiKey: apiKey
             )

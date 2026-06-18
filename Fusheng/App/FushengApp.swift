@@ -48,7 +48,8 @@ struct FushengApp: App {
             asrClient: asrClient,
             textPolisher: textPolisher,
             textInserter: textInserter,
-            draftStore: draftStore
+            draftStore: draftStore,
+            settings: settings
         )
         let service = HotkeyService(
             settings: settings,

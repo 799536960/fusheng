@@ -14,6 +14,10 @@ protocol SettingsProviding {
     var autoPasteEnabled: Bool { get set }
     var restoreClipboardEnabled: Bool { get set }
     var keepDraftHistoryEnabled: Bool { get set }
+    func polishStrategy(for mode: TextPolishMode) -> TextPolishStrategy
+    func savePolishStrategy(_ strategy: TextPolishStrategy, for mode: TextPolishMode)
+    func resetPolishStrategy(for mode: TextPolishMode)
+    func resetAllPolishStrategies()
 }
 
 @MainActor
@@ -58,7 +62,7 @@ protocol FailedRecordingAudioStoring {
 }
 
 protocol TextPolishing {
-    func polish(rawText: String, mode: TextPolishMode, model: String, apiKey: String) async throws -> String
+    func polish(rawText: String, strategy: TextPolishStrategy, model: String, apiKey: String) async throws -> String
 }
 
 protocol ASRRecognizing {

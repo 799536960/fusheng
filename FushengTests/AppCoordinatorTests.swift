@@ -94,6 +94,27 @@ final class AppCoordinatorTests: XCTestCase {
         XCTAssertEqual(coordinator.state, .completed(.pasted))
     }
 
+    func testFinishRecordingUsesEffectiveCustomStrategyForCurrentPolishMode() async {
+        let strategy = TextPolishStrategy.default(for: .concise).with {
+            $0.isCustomEnabled = true
+            $0.modeInstruction = "用最短句子保留关键动作。"
+            $0.extraInstructions = "不要添加新信息。"
+        }
+        let settings = FakeSettings(polishMode: .concise)
+        settings.savePolishStrategy(strategy, for: .concise)
+        let polisher = FakePolisher()
+        let coordinator = makeCoordinator(
+            settings: settings,
+            textPolisher: polisher,
+            focusDetector: FakeFocus(.inputAvailable(appName: "Notes"))
+        )
+
+        await coordinator.startRecording()
+        await coordinator.finishRecording()
+
+        XCTAssertEqual(polisher.strategies, [strategy])
+    }
+
     func testInputAvailableStreamsPartialTextThenCommitsPolishedText() async {
         let inserter = FakeInserter()
         let coordinator = makeCoordinator(
@@ -698,6 +719,7 @@ private final class FakeSettings: SettingsProviding {
     var autoPasteEnabled: Bool
     var restoreClipboardEnabled: Bool
     var keepDraftHistoryEnabled: Bool
+    private var strategies: [TextPolishMode: TextPolishStrategy]
 
     init(
         triggerMode: TriggerMode = .toggle,
@@ -717,6 +739,23 @@ private final class FakeSettings: SettingsProviding {
         self.autoPasteEnabled = autoPasteEnabled
         self.restoreClipboardEnabled = restoreClipboardEnabled
         self.keepDraftHistoryEnabled = keepDraftHistoryEnabled
+        self.strategies = [:]
+    }
+
+    func polishStrategy(for mode: TextPolishMode) -> TextPolishStrategy {
+        strategies[mode] ?? .default(for: mode)
+    }
+
+    func savePolishStrategy(_ strategy: TextPolishStrategy, for mode: TextPolishMode) {
+        strategies[mode] = strategy.normalized(for: mode)
+    }
+
+    func resetPolishStrategy(for mode: TextPolishMode) {
+        strategies.removeValue(forKey: mode)
+    }
+
+    func resetAllPolishStrategies() {
+        strategies.removeAll()
     }
 }
 
@@ -883,14 +922,16 @@ private final class FakePolisher: TextPolishing {
     let text: String
     let error: Error?
     private(set) var rawTexts: [String] = []
+    private(set) var strategies: [TextPolishStrategy] = []
 
     init(text: String = "整理文本", error: Error? = nil) {
         self.text = text
         self.error = error
     }
 
-    func polish(rawText: String, mode: TextPolishMode, model: String, apiKey: String) async throws -> String {
+    func polish(rawText: String, strategy: TextPolishStrategy, model: String, apiKey: String) async throws -> String {
         rawTexts.append(rawText)
+        strategies.append(strategy)
         if let error {
             throw error
         }
@@ -901,14 +942,24 @@ private final class FakePolisher: TextPolishing {
 private final class SequencedPolisher: TextPolishing {
     private var texts: [String]
     private(set) var rawTexts: [String] = []
+    private(set) var strategies: [TextPolishStrategy] = []
 
     init(_ texts: [String]) {
         self.texts = texts
     }
 
-    func polish(rawText: String, mode: TextPolishMode, model: String, apiKey: String) async throws -> String {
+    func polish(rawText: String, strategy: TextPolishStrategy, model: String, apiKey: String) async throws -> String {
         rawTexts.append(rawText)
+        strategies.append(strategy)
         return texts.removeFirst()
+    }
+}
+
+private extension TextPolishStrategy {
+    func with(_ update: (inout TextPolishStrategy) -> Void) -> TextPolishStrategy {
+        var copy = self
+        update(&copy)
+        return copy
     }
 }
 

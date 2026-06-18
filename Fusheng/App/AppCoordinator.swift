@@ -233,9 +233,10 @@ final class AppCoordinator: ObservableObject {
             do {
                 state = .polishing
                 coordinatorLogger.info("state=polishing")
+                let polishMode = settings.polishMode
                 let polishedText = try await textPolisher.polish(
                     rawText: recognizedText,
-                    mode: settings.polishMode,
+                    strategy: settings.polishStrategy(for: polishMode),
                     model: settings.polishModel,
                     apiKey: apiKey
                 )
