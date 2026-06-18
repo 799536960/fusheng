@@ -28,10 +28,12 @@ final class SettingsWindowController {
             return window
         }
 
-        let hostingController = NSHostingController(rootView: SettingsView().frame(width: 520, height: 520))
+        let hostingController = NSHostingController(rootView: SettingsView())
         let window = NSWindow(contentViewController: hostingController)
         window.title = "设置"
-        window.styleMask = [.titled, .closable, .miniaturizable]
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+        window.contentMinSize = NSSize(width: 860, height: 680)
+        window.setContentSize(NSSize(width: 920, height: 720))
         window.isReleasedWhenClosed = false
         window.collectionBehavior = [.moveToActiveSpace]
         window.center()
