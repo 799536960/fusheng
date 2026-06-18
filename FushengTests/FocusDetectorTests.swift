@@ -38,6 +38,44 @@ final class FocusDetectorTests: XCTestCase {
         XCTAssertEqual(detector.focusedInputContext(), .inputAvailable(appName: "Xcode"))
     }
 
+    func testTextRoleParentReportsInputAvailableWhenFocusedElementIsInternalNode() {
+        let parent = NSObject()
+        let child = NSObject()
+        let inspector = FakeAccessibilityInspector(
+            isTrusted: true,
+            element: child,
+            roles: [
+                ObjectIdentifier(child): "AXStaticText",
+                ObjectIdentifier(parent): "AXTextArea"
+            ],
+            parents: [
+                ObjectIdentifier(child): parent
+            ]
+        )
+        let detector = FocusDetector(accessibilityInspector: inspector, appNameProvider: { "Codex" })
+
+        XCTAssertEqual(detector.focusedInputContext(), .inputAvailable(appName: "Codex"))
+    }
+
+    func testTextRoleChildReportsInputAvailableWhenFocusedElementIsContainer() {
+        let container = NSObject()
+        let child = NSObject()
+        let inspector = FakeAccessibilityInspector(
+            isTrusted: true,
+            element: container,
+            roles: [
+                ObjectIdentifier(container): "AXGroup",
+                ObjectIdentifier(child): "AXTextField"
+            ],
+            children: [
+                ObjectIdentifier(container): [child]
+            ]
+        )
+        let detector = FocusDetector(accessibilityInspector: inspector, appNameProvider: { "Codex" })
+
+        XCTAssertEqual(detector.focusedInputContext(), .inputAvailable(appName: "Codex"))
+    }
+
     func testNonTextRoleWithoutSelectedTextRangeReportsNoInput() {
         let element = NSObject()
         let inspector = FakeAccessibilityInspector(
@@ -56,18 +94,27 @@ private struct FakeAccessibilityInspector: AccessibilityInspecting {
     let isTrusted: Bool
     let element: AnyObject?
     let role: String?
+    let roles: [ObjectIdentifier: String]
     let hasSelectedTextRange: Bool
+    let parents: [ObjectIdentifier: AnyObject]
+    let children: [ObjectIdentifier: [AnyObject]]
 
     init(
         isTrusted: Bool,
         element: AnyObject? = nil,
         role: String? = nil,
-        hasSelectedTextRange: Bool = false
+        roles: [ObjectIdentifier: String] = [:],
+        hasSelectedTextRange: Bool = false,
+        parents: [ObjectIdentifier: AnyObject] = [:],
+        children: [ObjectIdentifier: [AnyObject]] = [:]
     ) {
         self.isTrusted = isTrusted
         self.element = element
         self.role = role
+        self.roles = roles
         self.hasSelectedTextRange = hasSelectedTextRange
+        self.parents = parents
+        self.children = children
     }
 
     func isProcessTrusted(prompt: Bool) -> Bool {
@@ -79,10 +126,18 @@ private struct FakeAccessibilityInspector: AccessibilityInspecting {
     }
 
     func role(of element: AnyObject) -> String? {
-        role
+        roles[ObjectIdentifier(element)] ?? role
     }
 
     func hasSelectedTextRange(_ element: AnyObject) -> Bool {
         hasSelectedTextRange
+    }
+
+    func parentElement(of element: AnyObject) -> AnyObject? {
+        parents[ObjectIdentifier(element)]
+    }
+
+    func childElements(of element: AnyObject) -> [AnyObject] {
+        children[ObjectIdentifier(element)] ?? []
     }
 }

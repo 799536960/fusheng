@@ -3,7 +3,7 @@ import SwiftUI
 
 struct DraftHistoryView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \DraftRecord.createdAt, order: .reverse) private var drafts: [DraftRecord]
+    @State private var drafts: [DraftRecord] = []
     @State private var searchText = ""
     @State private var deletionError: String?
 
@@ -63,6 +63,10 @@ struct DraftHistoryView: View {
         } message: {
             Text(deletionError ?? "无法删除草稿")
         }
+        .onAppear(perform: reloadDrafts)
+        .onReceive(NotificationCenter.default.publisher(for: .draftHistoryDidChange)) { _ in
+            reloadDrafts()
+        }
     }
 
     private func copyToPasteboard(_ text: String) {
@@ -86,8 +90,24 @@ struct DraftHistoryView: View {
 
         do {
             try modelContext.save()
+            NotificationCenter.default.post(name: .draftHistoryDidChange, object: nil)
+            reloadDrafts()
         } catch {
             modelContext.rollback()
+            deletionError = error.localizedDescription
+        }
+    }
+
+    private func reloadDrafts() {
+        do {
+            let descriptor = FetchDescriptor<DraftRecord>(
+                sortBy: [
+                    SortDescriptor(\.createdAt, order: .reverse),
+                    SortDescriptor(\.idSortKey, order: .reverse)
+                ]
+            )
+            drafts = try modelContext.fetch(descriptor)
+        } catch {
             deletionError = error.localizedDescription
         }
     }

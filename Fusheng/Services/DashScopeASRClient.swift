@@ -2,6 +2,37 @@ import Foundation
 
 private struct ASRTimeout: Error {}
 
+private enum ASRStreamingResult {
+    case finishTaskSent
+    case recognition(RecognitionResult)
+}
+
+private actor RecognitionAccumulator {
+    private var finalText = ""
+    private var partialText = ""
+
+    func record(text: String, isFinalSentence: Bool) {
+        partialText = text
+
+        guard isFinalSentence else { return }
+
+        if text.hasPrefix(finalText) {
+            finalText = text
+        } else {
+            finalText += text
+        }
+    }
+
+    func resultIfAvailable() -> RecognitionResult? {
+        let rawText = finalText.isEmpty ? partialText : finalText
+        guard !rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+
+        return RecognitionResult(rawText: rawText, partialText: partialText)
+    }
+}
+
 protocol WebSocketTasking {
     func resume()
     func send(_ message: URLSessionWebSocketTask.Message) async throws
@@ -29,19 +60,24 @@ struct DashScopeASRClient: ASRRecognizing {
     private let startTimeout: TimeInterval
     private let finishTimeout: TimeInterval
 
-    init(session: URLSession = .shared, startTimeout: TimeInterval = 10, finishTimeout: TimeInterval = 60) {
+    init(session: URLSession = .shared, startTimeout: TimeInterval = 10, finishTimeout: TimeInterval = 180) {
         self.session = URLSessionWebSocketSession(session: session)
         self.startTimeout = startTimeout
         self.finishTimeout = finishTimeout
     }
 
-    init(session: WebSocketSessioning, startTimeout: TimeInterval = 10, finishTimeout: TimeInterval = 60) {
+    init(session: WebSocketSessioning, startTimeout: TimeInterval = 10, finishTimeout: TimeInterval = 180) {
         self.session = session
         self.startTimeout = startTimeout
         self.finishTimeout = finishTimeout
     }
 
-    func recognize(audioChunks: AsyncThrowingStream<Data, Error>, model: String, apiKey: String) async throws -> RecognitionResult {
+    func recognize(
+        audioChunks: AsyncThrowingStream<Data, Error>,
+        model: String,
+        apiKey: String,
+        onPartialResult: @escaping @Sendable (String) async -> Void
+    ) async throws -> RecognitionResult {
         let taskID = UUID()
         var request = URLRequest(url: endpoint)
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
@@ -59,15 +95,62 @@ struct DashScopeASRClient: ASRRecognizing {
             try await waitForTaskStarted(using: socket)
         }
 
-        for try await chunk in audioChunks {
-            try await socket.send(.data(chunk))
-        }
+        let accumulator = RecognitionAccumulator()
 
-        try await send(DashScopeASRFinishTaskEvent(taskID: taskID), using: socket)
-        return try await withTimeout(seconds: finishTimeout, message: "等待 task-finished 超时", onTimeout: {
-            socket.cancel(with: .goingAway, reason: nil)
-        }) {
-            try await collectRecognitionResult(using: socket)
+        return try await withThrowingTaskGroup(of: ASRStreamingResult.self) { group in
+            group.addTask {
+                for try await chunk in audioChunks {
+                    try await socket.send(.data(chunk))
+                }
+
+                try await send(DashScopeASRFinishTaskEvent(taskID: taskID), using: socket)
+                return .finishTaskSent
+            }
+
+            group.addTask {
+                let result = try await collectRecognitionResult(
+                    using: socket,
+                    accumulator: accumulator,
+                    onPartialResult: onPartialResult
+                )
+                return .recognition(result)
+            }
+
+            var didStartFinishTimeout = false
+
+            do {
+                while let result = try await group.next() {
+                    switch result {
+                    case .recognition(let result):
+                        group.cancelAll()
+                        return result
+                    case .finishTaskSent:
+                        guard !didStartFinishTimeout else { continue }
+                        didStartFinishTimeout = true
+                        group.addTask {
+                            let nanoseconds = UInt64(max(finishTimeout, 0) * 1_000_000_000)
+                            try await Task.sleep(nanoseconds: nanoseconds)
+                            if let fallbackResult = await accumulator.resultIfAvailable() {
+                                Task {
+                                    try? await Task.sleep(nanoseconds: 1_000_000)
+                                    socket.cancel(with: .goingAway, reason: nil)
+                                }
+                                return .recognition(fallbackResult)
+                            }
+                            throw ASRTimeout()
+                        }
+                    }
+                }
+
+                throw AppError.asrFailed("识别任务异常结束")
+            } catch is ASRTimeout {
+                socket.cancel(with: .goingAway, reason: nil)
+                group.cancelAll()
+                throw AppError.asrFailed("等待 task-finished 超时")
+            } catch {
+                group.cancelAll()
+                throw error
+            }
         }
     }
 
@@ -99,20 +182,22 @@ struct DashScopeASRClient: ASRRecognizing {
         }
     }
 
-    private func collectRecognitionResult(using socket: WebSocketTasking) async throws -> RecognitionResult {
-        var finalText = ""
-        var partialText = ""
-
+    private func collectRecognitionResult(
+        using socket: WebSocketTasking,
+        accumulator: RecognitionAccumulator,
+        onPartialResult: @escaping @Sendable (String) async -> Void
+    ) async throws -> RecognitionResult {
         while true {
             let event = try await receiveEvent(using: socket)
             switch event {
             case .resultGenerated(let text, let isFinalSentence):
-                partialText = text
-                if isFinalSentence {
-                    finalText += text
+                guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                    continue
                 }
+                await accumulator.record(text: text, isFinalSentence: isFinalSentence)
+                await onPartialResult(text)
             case .taskFinished:
-                return RecognitionResult(rawText: finalText.isEmpty ? partialText : finalText, partialText: partialText)
+                return await accumulator.resultIfAvailable() ?? RecognitionResult(rawText: "", partialText: "")
             case .taskFailed(let message):
                 throw AppError.asrFailed(message)
             case .taskStarted, .ignored:

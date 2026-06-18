@@ -19,6 +19,7 @@ final class SettingsWindowController {
 
         DispatchQueue.main.async {
             self.raise(window)
+            window.makeFirstResponder(nil)
         }
     }
 

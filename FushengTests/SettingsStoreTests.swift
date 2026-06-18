@@ -8,7 +8,8 @@ final class SettingsStoreTests: XCTestCase {
 
         let store = SettingsStore(defaults: defaults)
 
-        XCTAssertEqual(store.triggerMode, .toggle)
+        XCTAssertEqual(store.triggerMode, .hold)
+        XCTAssertEqual(store.holdKey, .f9)
         XCTAssertEqual(store.asrModel, "fun-asr-realtime")
         XCTAssertEqual(store.polishModel, "qwen-plus")
         XCTAssertEqual(store.polishMode, .clean)
@@ -23,6 +24,7 @@ final class SettingsStoreTests: XCTestCase {
 
         var store = SettingsStore(defaults: defaults)
         store.triggerMode = .hold
+        store.holdKey = .f12
         store.asrModel = "custom-asr"
         store.polishModel = "custom-chat"
         store.polishMode = .professional
@@ -32,12 +34,24 @@ final class SettingsStoreTests: XCTestCase {
 
         let reloaded = SettingsStore(defaults: defaults)
         XCTAssertEqual(reloaded.triggerMode, .hold)
+        XCTAssertEqual(reloaded.holdKey, .f12)
         XCTAssertEqual(reloaded.asrModel, "custom-asr")
         XCTAssertEqual(reloaded.polishModel, "custom-chat")
         XCTAssertEqual(reloaded.polishMode, .professional)
         XCTAssertFalse(reloaded.autoPasteEnabled)
         XCTAssertFalse(reloaded.restoreClipboardEnabled)
         XCTAssertFalse(reloaded.keepDraftHistoryEnabled)
+    }
+
+    func testPersistsCustomSingleKeyHotkey() {
+        let defaults = UserDefaults(suiteName: "SettingsStoreTests.customHotkey")!
+        defaults.removePersistentDomain(forName: "SettingsStoreTests.customHotkey")
+
+        var store = SettingsStore(defaults: defaults)
+        store.holdKey = SpeechHotkey(keyCode: 0, displayName: "A")
+
+        let reloaded = SettingsStore(defaults: defaults)
+        XCTAssertEqual(reloaded.holdKey, SpeechHotkey(keyCode: 0, displayName: "A"))
     }
 
     func testPersistsPolishStrategyPerMode() {

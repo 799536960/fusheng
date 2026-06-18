@@ -110,38 +110,53 @@ final class AppCoordinator: ObservableObject {
     }
 
     func startRecording() async {
+        coordinatorLogger.info("startRecording requested; state=\(self.state.displayText, privacy: .public)")
+        DiagnosticLog.write(category: "Coordinator", message: "startRecording requested state=\(state.displayText)")
         guard state.canStartRecording else {
             coordinatorLogger.info("startRecording ignored; state=\(self.state.displayText, privacy: .public)")
+            DiagnosticLog.write(category: "Coordinator", message: "startRecording ignored state=\(state.displayText)")
             return
         }
 
         do {
             coordinatorLogger.info("startRecording accepted")
+            DiagnosticLog.write(category: "Coordinator", message: "startRecording accepted")
             latestPartialText = ""
 
             guard let apiKey = try apiKeyProvider.loadAPIKey()?.trimmingCharacters(in: .whitespacesAndNewlines),
                   !apiKey.isEmpty else {
+                coordinatorLogger.error("startRecording blocked: missing API key")
+                DiagnosticLog.write(category: "Coordinator", message: "startRecording blocked missing API key")
                 state = .failed(.missingAPIKey)
                 return
             }
 
             guard let recorder else {
+                coordinatorLogger.error("startRecording blocked: recorder service missing")
+                DiagnosticLog.write(category: "Coordinator", message: "startRecording blocked recorder service missing")
                 state = .failed(.recorderFailed("录音服务未初始化"))
                 return
             }
 
             guard let asrClient, textPolisher != nil else {
+                coordinatorLogger.error("startRecording blocked: recognition service missing")
+                DiagnosticLog.write(category: "Coordinator", message: "startRecording blocked recognition service missing")
                 state = .failed(.asrFailed("识别服务未初始化"))
                 return
             }
 
-            guard await ensureMicrophonePermission() == .authorized else {
+            let microphonePermission = await ensureMicrophonePermission()
+            coordinatorLogger.info("startRecording microphone permission=\(microphonePermission.logName, privacy: .public)")
+            DiagnosticLog.write(category: "Coordinator", message: "startRecording microphone permission=\(microphonePermission.logName)")
+            guard microphonePermission == .authorized else {
                 state = .failed(.microphonePermissionDenied)
                 return
             }
 
             let focusContext = focusDetector?.focusedInputContext() ?? .noInput(appName: fallbackAppName)
             activeFocusContext = focusContext
+            coordinatorLogger.info("startRecording focusContext=\(focusContext.logName, privacy: .public)")
+            DiagnosticLog.write(category: "Coordinator", message: "startRecording focusContext=\(focusContext.logName)")
             prepareLiveComposition(for: focusContext)
 
             let failedRecordingID = UUID()
@@ -150,6 +165,8 @@ final class AppCoordinator: ObservableObject {
             activeFailedRecordingAudioWriter = writer
 
             activeAudioStream = try recorder.startRecording()
+            coordinatorLogger.info("audio recorder started")
+            DiagnosticLog.write(category: "Coordinator", message: "audio recorder started")
             activeAPIKey = apiKey
             let recorderStream = activeAudioStream!
             let audioStream = writer.map { AudioStreamTee.tee(recorderStream, writer: $0) } ?? recorderStream
@@ -166,14 +183,17 @@ final class AppCoordinator: ObservableObject {
             }
             state = .recording(startedAt: Date())
             coordinatorLogger.info("state=recording")
+            DiagnosticLog.write(category: "Coordinator", message: "state=recording")
         } catch let error as AppError {
             discardFailedRecordingCandidateAudio()
             state = .failed(error)
             coordinatorLogger.error("startRecording failed: \(error.localizedDescription, privacy: .public)")
+            DiagnosticLog.write(category: "Coordinator", message: "startRecording failed \(error.localizedDescription)")
         } catch {
             discardFailedRecordingCandidateAudio()
             state = .failed(.recorderFailed(error.localizedDescription))
             coordinatorLogger.error("startRecording failed: \(error.localizedDescription, privacy: .public)")
+            DiagnosticLog.write(category: "Coordinator", message: "startRecording failed \(error.localizedDescription)")
         }
     }
 
@@ -189,25 +209,40 @@ final class AppCoordinator: ObservableObject {
     }
 
     func finishRecording() async {
+        coordinatorLogger.info("finishRecording requested; state=\(self.state.displayText, privacy: .public)")
+        DiagnosticLog.write(category: "Coordinator", message: "finishRecording requested state=\(state.displayText)")
         guard case .recording = state else {
             coordinatorLogger.info("finishRecording ignored; state=\(self.state.displayText, privacy: .public)")
+            DiagnosticLog.write(category: "Coordinator", message: "finishRecording ignored state=\(state.displayText)")
             return
         }
 
         guard activeAudioStream != nil, let apiKey = activeAPIKey, let recognitionTask = activeRecognitionTask else {
             discardFailedRecordingCandidateAudio()
+            clearActiveInputSession()
             state = .failed(.recorderFailed("没有正在进行的录音"))
             coordinatorLogger.error("finishRecording failed: missing active recording session")
+            DiagnosticLog.write(category: "Coordinator", message: "finishRecording failed missing active recording session")
             return
         }
 
+        defer {
+            activeAudioStream = nil
+            activeAPIKey = nil
+            if !state.showsRecordingOverlay {
+                clearActiveInputSession()
+            }
+        }
+
         coordinatorLogger.info("finishRecording accepted")
+        DiagnosticLog.write(category: "Coordinator", message: "finishRecording accepted")
         recorder?.stopRecording()
         activeAudioStream = nil
         activeAPIKey = nil
 
         guard let textPolisher else {
             discardFailedRecordingCandidateAudio()
+            clearActiveInputSession()
             state = .failed(.asrFailed("识别服务未初始化"))
             return
         }
@@ -522,6 +557,36 @@ private extension AppWorkflowState {
             return true
         case .recording, .recognizing, .polishing, .delivering:
             return false
+        }
+    }
+}
+
+private extension MicrophonePermissionState {
+    var logName: String {
+        switch self {
+        case .authorized:
+            return "authorized"
+        case .notDetermined:
+            return "notDetermined"
+        case .denied:
+            return "denied"
+        case .restricted:
+            return "restricted"
+        case .unknown:
+            return "unknown"
+        }
+    }
+}
+
+private extension FocusInputContext {
+    var logName: String {
+        switch self {
+        case .inputAvailable(let appName):
+            return "inputAvailable(app=\(appName))"
+        case .noInput(let appName):
+            return "noInput(app=\(appName))"
+        case .accessibilityPermissionMissing(let appName):
+            return "accessibilityPermissionMissing(app=\(appName))"
         }
     }
 }

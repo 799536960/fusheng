@@ -441,6 +441,37 @@ final class AppCoordinatorTests: XCTestCase {
         }
     }
 
+    func testASRFailureDoesNotBlockNextRecordingRound() async {
+        let recorder = FakeRecorder()
+        let asr = SequencedOutcomeASR([
+            .failure(AppError.asrFailed("等待 task-finished 超时")),
+            .success(.init(rawText: "第二次语音", partials: ["第二次语音"]))
+        ])
+        let inserter = FreshCompositionInserter()
+        let coordinator = makeCoordinator(
+            recorder: recorder,
+            asrClient: asr,
+            focusDetector: FakeFocus(.inputAvailable(appName: "Notes")),
+            textInserter: inserter
+        )
+
+        await coordinator.startRecording()
+        await coordinator.finishRecording()
+        guard case .failed(.asrFailed) = coordinator.state else {
+            return XCTFail("Expected ASR failure, got \(coordinator.state)")
+        }
+
+        await coordinator.startRecording()
+        await coordinator.finishRecording()
+
+        XCTAssertEqual(recorder.startCount, 2)
+        XCTAssertEqual(recorder.stopCount, 2)
+        XCTAssertEqual(asr.callCount, 2)
+        XCTAssertEqual(inserter.compositions.map(\.updatedTexts).last, ["第二次语音"])
+        XCTAssertEqual(inserter.compositions.map(\.committedTexts).last, ["整理文本"])
+        XCTAssertEqual(coordinator.state, .completed(.pasted))
+    }
+
     func testPolishFailureSavesFailedRecordingAndRawText() async {
         let failedStore = FakeFailedRecordingStore()
         let audioStore = FakeFailedRecordingAudioStore()
@@ -868,6 +899,39 @@ private final class SequencedASR: ASRRecognizing {
             await onPartialResult(partial)
         }
         return RecognitionResult(rawText: response.rawText, partialText: response.partials.last ?? response.rawText)
+    }
+}
+
+private final class SequencedOutcomeASR: ASRRecognizing {
+    enum Outcome {
+        case success(SequencedASR.Response)
+        case failure(Error)
+    }
+
+    private var outcomes: [Outcome]
+    private(set) var callCount = 0
+
+    init(_ outcomes: [Outcome]) {
+        self.outcomes = outcomes
+    }
+
+    func recognize(
+        audioChunks: AsyncThrowingStream<Data, Error>,
+        model: String,
+        apiKey: String,
+        onPartialResult: @escaping @Sendable (String) async -> Void
+    ) async throws -> RecognitionResult {
+        callCount += 1
+        for try await _ in audioChunks {}
+        switch outcomes.removeFirst() {
+        case .success(let response):
+            for partial in response.partials {
+                await onPartialResult(partial)
+            }
+            return RecognitionResult(rawText: response.rawText, partialText: response.partials.last ?? response.rawText)
+        case .failure(let error):
+            throw error
+        }
     }
 }
 

@@ -114,9 +114,16 @@ enum DashScopeASRServerEvent: Equatable {
         guard
             let payload = root["payload"] as? [String: Any],
             let output = payload["output"] as? [String: Any],
-            let sentence = output["sentence"] as? [String: Any],
-            let text = sentence["text"] as? String
+            let sentence = output["sentence"] as? [String: Any]
         else {
+            throw AppError.asrFailed("服务端事件格式无效")
+        }
+
+        if sentence["heartbeat"] as? Bool == true {
+            return .ignored("heartbeat")
+        }
+
+        guard let text = sentence["text"] as? String else {
             throw AppError.asrFailed("服务端事件格式无效")
         }
 

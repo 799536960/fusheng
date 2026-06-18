@@ -97,12 +97,14 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(source.contains(".accessibilityAddTraits(.isButton)"))
         XCTAssertTrue(source.contains("HotkeyKeyCaptureView"))
         XCTAssertTrue(source.contains("makeFirstResponder(nsView)"))
+        XCTAssertTrue(source.contains("NSApp.keyWindow?.makeFirstResponder(nil)"))
         XCTAssertTrue(source.contains("override func keyDown(with event: NSEvent)"))
+        XCTAssertTrue(source.contains("NSEvent.addLocalMonitorForEvents(matching: .keyDown"))
+        XCTAssertTrue(source.contains(".hotkeyRecorderCaptureDidChange"))
         XCTAssertTrue(source.contains("SpeechHotkey.from(event: event)"))
         XCTAssertTrue(source.contains("Button(\"打开权限设置\")"))
         XCTAssertTrue(source.contains("openAccessibilitySettings()"))
         XCTAssertTrue(source.contains("Privacy_Accessibility"))
-        XCTAssertFalse(source.contains("NSEvent.addLocalMonitorForEvents(matching: .keyDown"))
         XCTAssertTrue(source.contains("辅助功能/输入监控中允许浮声"))
         XCTAssertFalse(source.contains("KeyboardShortcuts.Recorder(\"语音输入\""))
         XCTAssertFalse(source.contains("Picker(\"长按触发键\""))
@@ -310,6 +312,50 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(source.contains("return nil"))
     }
 
+    func testHotkeyDiagnosticsTelemetryCoversCapturePath() throws {
+        let hotkeySource = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/Services/HotkeyService.swift"),
+            encoding: .utf8
+        )
+        let coordinatorSource = try String(
+            contentsOf: try projectFileURL("Fusheng/App/AppCoordinator.swift"),
+            encoding: .utf8
+        )
+        let settingsSource = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/UI/SettingsView.swift"),
+            encoding: .utf8
+        )
+        let appSource = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/App/FushengApp.swift"),
+            encoding: .utf8
+        )
+        let diagnosticsScript = try String(
+            contentsOf: try projectFileURL("script/hotkey_diagnostics.sh"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(hotkeySource.contains("category: \"Hotkey\""))
+        XCTAssertTrue(hotkeySource.contains("capture health reason="))
+        XCTAssertTrue(hotkeySource.contains("secureInput="))
+        XCTAssertTrue(hotkeySource.contains("matched \\("))
+        XCTAssertTrue(hotkeySource.contains("dispatching \\("))
+        XCTAssertTrue(hotkeySource.contains("writeHotkeyDiagnostic"))
+        XCTAssertTrue(coordinatorSource.contains("startRecording requested; state="))
+        XCTAssertTrue(coordinatorSource.contains("startRecording microphone permission="))
+        XCTAssertTrue(coordinatorSource.contains("startRecording focusContext="))
+        XCTAssertTrue(coordinatorSource.contains("DiagnosticLog.write(category: \"Coordinator\""))
+        XCTAssertTrue(settingsSource.contains("category: \"Settings\""))
+        XCTAssertTrue(settingsSource.contains("hotkey capture view captured keyDown keyCode="))
+        XCTAssertTrue(settingsSource.contains("DiagnosticLog.write(category: \"Settings\""))
+        XCTAssertTrue(appSource.contains("hotkey onStart closure invoked"))
+        XCTAssertTrue(appSource.contains("hotkey start task entered state="))
+        XCTAssertTrue(appSource.contains("hotkey onFinish closure invoked"))
+        XCTAssertTrue(appSource.contains("hotkey finish task entered state="))
+        XCTAssertTrue(diagnosticsScript.contains("hotkey-diagnostics.log"))
+        XCTAssertTrue(diagnosticsScript.contains("tail -n"))
+        XCTAssertTrue(diagnosticsScript.contains("tail -F"))
+    }
+
     func testRecordingOverlayUsesGeneratedMicrophoneImageAndWaveform() throws {
         let source = try String(
             contentsOf: try sourceSnapshotURL("Fusheng/UI/RecordingOverlayView.swift"),
@@ -377,6 +423,20 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(project.contains("CODE_SIGN_IDENTITY = \"Apple Development\";"))
         XCTAssertFalse(project.contains("CODE_SIGN_IDENTITY = -;"))
         XCTAssertTrue(project.contains("ENABLE_HARDENED_RUNTIME = YES;"))
+    }
+
+    func testLocalPublishScriptPreventsDuplicateFushengInstances() throws {
+        let script = try String(
+            contentsOf: try projectFileURL("script/publish_local.sh"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(script.contains("stop_all_fusheng_processes"))
+        XCTAssertTrue(script.contains("cleanup_on_exit"))
+        XCTAssertTrue(script.contains("trap cleanup_on_exit EXIT"))
+        XCTAssertTrue(script.contains("pkill -f \"$DERIVED_DATA_FUSHENG_PATTERN\""))
+        XCTAssertTrue(script.contains("verify_only_installed_instance_is_running"))
+        XCTAssertTrue(script.contains("unexpected extra Fusheng process"))
     }
 
     private func sourceSnapshotURL(

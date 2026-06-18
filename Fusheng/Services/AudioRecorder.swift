@@ -2,14 +2,16 @@ import AVFoundation
 import Foundation
 
 final class AudioRecorder: AudioRecording {
-    private let engine = AVAudioEngine()
+    private var engine: AVAudioEngine?
     private var continuation: AsyncThrowingStream<Data, Error>.Continuation?
 
     func startRecording() throws -> AsyncThrowingStream<Data, Error> {
-        if engine.isRunning {
+        if engine?.isRunning == true {
             stopRecording()
         }
 
+        let engine = AVAudioEngine()
+        self.engine = engine
         let input = engine.inputNode
         let inputFormat = input.outputFormat(forBus: 0)
         guard let outputFormat = AVAudioFormat(
@@ -34,6 +36,7 @@ final class AudioRecorder: AudioRecording {
             do {
                 let converted = try self.convert(buffer: buffer, converter: converter, outputFormat: outputFormat)
                 self.continuation?.yield(converted)
+                self.publishAudioLevel(from: converted)
             } catch {
                 self.continuation?.finish(throwing: error)
                 self.continuation = nil
@@ -46,8 +49,12 @@ final class AudioRecorder: AudioRecording {
     }
 
     func stopRecording() {
-        engine.inputNode.removeTap(onBus: 0)
-        engine.stop()
+        if let engine {
+            engine.inputNode.removeTap(onBus: 0)
+            engine.stop()
+            engine.reset()
+        }
+        engine = nil
         continuation?.finish()
         continuation = nil
     }
@@ -84,5 +91,29 @@ final class AudioRecorder: AudioRecording {
 
         let frameLength = Int(outputBuffer.frameLength)
         return Data(bytes: channelData[0], count: frameLength * MemoryLayout<Int16>.size)
+    }
+
+    private func publishAudioLevel(from data: Data) {
+        let sampleCount = data.count / MemoryLayout<Int16>.size
+        guard sampleCount > 0 else { return }
+
+        let sumSquares = data.withUnsafeBytes { rawBuffer -> Double in
+            guard let samples = rawBuffer.bindMemory(to: Int16.self).baseAddress else {
+                return 0
+            }
+
+            var total = 0.0
+            for index in 0..<sampleCount {
+                let normalized = Double(samples[index]) / Double(Int16.max)
+                total += normalized * normalized
+            }
+            return total
+        }
+
+        let rms = sqrt(sumSquares / Double(sampleCount))
+        let level = min(1, max(0, rms * 8))
+        Task { @MainActor in
+            NotificationCenter.default.post(name: .audioLevelDidChange, object: nil, userInfo: ["level": level])
+        }
     }
 }

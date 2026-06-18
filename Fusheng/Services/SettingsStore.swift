@@ -3,6 +3,9 @@ import Foundation
 struct SettingsStore: SettingsProviding {
     private enum Key {
         static let triggerMode = "triggerMode"
+        static let holdKey = "holdKey"
+        static let holdKeyCode = "holdKeyCode"
+        static let holdKeyDisplayName = "holdKeyDisplayName"
         static let asrModel = "asrModel"
         static let polishModel = "polishModel"
         static let polishMode = "polishMode"
@@ -22,8 +25,31 @@ struct SettingsStore: SettingsProviding {
     }
 
     var triggerMode: TriggerMode {
-        get { TriggerMode(rawValue: defaults.string(forKey: Key.triggerMode) ?? "") ?? .toggle }
+        get { TriggerMode(rawValue: defaults.string(forKey: Key.triggerMode) ?? "") ?? .hold }
         set { defaults.set(newValue.rawValue, forKey: Key.triggerMode) }
+    }
+
+    var holdKey: SpeechHotkey {
+        get {
+            if defaults.object(forKey: Key.holdKeyCode) != nil {
+                let keyCode = UInt16(defaults.integer(forKey: Key.holdKeyCode))
+                let displayName = defaults.string(forKey: Key.holdKeyDisplayName)
+                    ?? SpeechHotkey.displayName(forKeyCode: keyCode, characters: nil)
+                return SpeechHotkey(keyCode: keyCode, displayName: displayName)
+            }
+
+            if let legacyKey = SpeechHotkeyKey(rawValue: defaults.string(forKey: Key.holdKey) ?? "") {
+                return SpeechHotkey.legacy(legacyKey)
+            }
+
+            return .f9
+        }
+        set {
+            defaults.set(Int(newValue.keyCode), forKey: Key.holdKeyCode)
+            defaults.set(newValue.displayName, forKey: Key.holdKeyDisplayName)
+            defaults.removeObject(forKey: Key.holdKey)
+            NotificationCenter.default.post(name: .speechHotkeyDidChange, object: nil)
+        }
     }
 
     var asrModel: String {

@@ -73,6 +73,7 @@ final class DraftStore: DraftStoring {
         )
         modelContext.insert(record)
         try modelContext.save()
+        NotificationCenter.default.post(name: .draftHistoryDidChange, object: nil)
     }
 
     func recentDrafts(limit: Int) throws -> [DraftSnapshot] {
@@ -109,6 +110,7 @@ final class DraftStore: DraftStoring {
             modelContext.delete(record)
         }
         try modelContext.save()
+        NotificationCenter.default.post(name: .draftHistoryDidChange, object: nil)
     }
 }
 

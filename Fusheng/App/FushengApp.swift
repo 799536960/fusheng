@@ -66,10 +66,20 @@ struct FushengApp: App {
                 }
             },
             onStart: {
-                Task { await coordinator.startRecording() }
+                DiagnosticLog.write(category: "App", message: "hotkey onStart closure invoked")
+                Task { @MainActor [coordinator] in
+                    DiagnosticLog.write(category: "App", message: "hotkey start task entered state=\(coordinator.statusText)")
+                    await coordinator.startRecording()
+                    DiagnosticLog.write(category: "App", message: "hotkey start task completed state=\(coordinator.statusText)")
+                }
             },
             onFinish: {
-                Task { await coordinator.finishRecording() }
+                DiagnosticLog.write(category: "App", message: "hotkey onFinish closure invoked")
+                Task { @MainActor [coordinator] in
+                    DiagnosticLog.write(category: "App", message: "hotkey finish task entered state=\(coordinator.statusText)")
+                    await coordinator.finishRecording()
+                    DiagnosticLog.write(category: "App", message: "hotkey finish task completed state=\(coordinator.statusText)")
+                }
             }
         )
         if !Self.isRunningTests {

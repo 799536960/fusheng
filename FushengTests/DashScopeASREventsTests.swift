@@ -43,6 +43,19 @@ final class DashScopeASREventsTests: XCTestCase {
         XCTAssertEqual(event, .resultGenerated(text: "你好世界", isFinalSentence: true))
     }
 
+    func testParseResultGeneratedHeartbeatEventReturnsIgnored() throws {
+        let json = """
+        {
+          "header": { "event": "result-generated", "task_id": "task-1" },
+          "payload": { "output": { "sentence": { "text": "", "heartbeat": true, "sentence_end": false } } }
+        }
+        """
+
+        let event = try DashScopeASRServerEvent.parse(Data(json.utf8))
+
+        XCTAssertEqual(event, .ignored("heartbeat"))
+    }
+
     func testParseTaskFinishedEvent() throws {
         let json = """
         { "header": { "event": "task-finished", "task_id": "task-1" }, "payload": {} }
