@@ -8,6 +8,7 @@ struct PolishStrategySettingsView: View {
     @State private var testInput = ""
     @State private var testResult = ""
     @State private var isTesting = false
+    @State private var activeTestID: UUID?
     @State private var pendingReset: ResetScope?
     @State private var isResetDialogPresented = false
 
@@ -152,6 +153,8 @@ struct PolishStrategySettingsView: View {
         strategy = settings.polishStrategy(for: mode)
         statusMessage = ""
         testResult = ""
+        isTesting = false
+        activeTestID = nil
     }
 
     private func saveStrategy() {
@@ -176,6 +179,8 @@ struct PolishStrategySettingsView: View {
         guard !rawText.isEmpty else { return }
 
         isTesting = true
+        let testID = UUID()
+        activeTestID = testID
         statusMessage = ""
         testResult = ""
 
@@ -205,12 +210,16 @@ struct PolishStrategySettingsView: View {
                 )
 
                 await MainActor.run {
+                    guard activeTestID == testID else { return }
                     testResult = polishedText
+                    activeTestID = nil
                     isTesting = false
                 }
             } catch {
                 await MainActor.run {
+                    guard activeTestID == testID else { return }
                     statusMessage = error.localizedDescription
+                    activeTestID = nil
                     isTesting = false
                 }
             }

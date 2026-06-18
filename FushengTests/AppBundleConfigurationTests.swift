@@ -194,6 +194,9 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(source.contains("throw AppError.polishFailed(\"整理模型为空\")"))
         XCTAssertTrue(source.contains("throw AppError.missingAPIKey"))
         XCTAssertTrue(source.contains("loadedAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)"))
+        XCTAssertTrue(source.contains("@State private var activeTestID"))
+        XCTAssertTrue(source.contains("activeTestID = nil"))
+        XCTAssertTrue(source.contains("guard activeTestID == testID else { return }"))
         XCTAssertFalse(source.contains("copyToClipboard"))
         XCTAssertFalse(source.contains("saveDraft"))
     }
