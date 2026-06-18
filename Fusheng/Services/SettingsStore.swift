@@ -9,6 +9,10 @@ struct SettingsStore: SettingsProviding {
         static let autoPasteEnabled = "autoPasteEnabled"
         static let restoreClipboardEnabled = "restoreClipboardEnabled"
         static let keepDraftHistoryEnabled = "keepDraftHistoryEnabled"
+
+        static func polishStrategy(_ mode: TextPolishMode) -> String {
+            "polishStrategy.\(mode.rawValue)"
+        }
     }
 
     private let defaults: UserDefaults
@@ -50,5 +54,29 @@ struct SettingsStore: SettingsProviding {
     var keepDraftHistoryEnabled: Bool {
         get { defaults.object(forKey: Key.keepDraftHistoryEnabled) as? Bool ?? true }
         set { defaults.set(newValue, forKey: Key.keepDraftHistoryEnabled) }
+    }
+
+    func polishStrategy(for mode: TextPolishMode) -> TextPolishStrategy {
+        guard let data = defaults.data(forKey: Key.polishStrategy(mode)),
+              let decoded = try? JSONDecoder().decode(TextPolishStrategy.self, from: data) else {
+            return .default(for: mode)
+        }
+        return decoded.normalized(for: mode)
+    }
+
+    func savePolishStrategy(_ strategy: TextPolishStrategy, for mode: TextPolishMode) {
+        let normalized = strategy.normalized(for: mode)
+        guard let data = try? JSONEncoder().encode(normalized) else { return }
+        defaults.set(data, forKey: Key.polishStrategy(mode))
+    }
+
+    func resetPolishStrategy(for mode: TextPolishMode) {
+        defaults.removeObject(forKey: Key.polishStrategy(mode))
+    }
+
+    func resetAllPolishStrategies() {
+        for mode in TextPolishMode.allCases {
+            resetPolishStrategy(for: mode)
+        }
     }
 }

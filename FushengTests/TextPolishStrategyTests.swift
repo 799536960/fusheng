@@ -82,4 +82,31 @@ final class TextPolishStrategyTests: XCTestCase {
         XCTAssertTrue(normalized.isCustomEnabled)
         XCTAssertEqual(normalized.modeInstruction, "自定义策略")
     }
+
+    func testCodableRoundTripPreservesStrategy() throws {
+        var strategy = TextPolishStrategy.default(for: .professional)
+        strategy.isCustomEnabled = true
+        strategy.removeFillerWords = false
+        strategy.removeMeaninglessRepetition = false
+        strategy.fixObviousTypos = false
+        strategy.addNaturalPunctuation = false
+        strategy.allowLightPolish = true
+        strategy.conservatism = .natural
+        strategy.modeInstruction = "自定义正式模式"
+        strategy.extraInstructions = "不要添加客套话"
+
+        let data = try JSONEncoder().encode(strategy)
+        let decoded = try JSONDecoder().decode(TextPolishStrategy.self, from: data)
+
+        XCTAssertEqual(decoded, strategy)
+    }
+
+    func testResolvedInstructionsFallbackAndTrimWhitespace() {
+        var strategy = TextPolishStrategy.default(for: .concise)
+        strategy.modeInstruction = " \n\t "
+        strategy.extraInstructions = " \n  保留否定词。 \t"
+
+        XCTAssertEqual(strategy.resolvedModeInstruction, TextPolishStrategy.default(for: .concise).modeInstruction)
+        XCTAssertEqual(strategy.resolvedExtraInstructions, "保留否定词。")
+    }
 }
