@@ -188,6 +188,10 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(source.contains("confirmationDialog"))
         XCTAssertTrue(source.contains("TextPolishPrompt.safetyBoundary"))
         XCTAssertTrue(source.contains("polisher.polish"))
+        XCTAssertTrue(source.contains("settings.polishModel.trimmingCharacters(in: .whitespacesAndNewlines)"))
+        XCTAssertTrue(source.contains("throw AppError.polishFailed(\"整理模型为空\")"))
+        XCTAssertTrue(source.contains("throw AppError.missingAPIKey"))
+        XCTAssertTrue(source.contains("loadedAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)"))
         XCTAssertFalse(source.contains("copyToClipboard"))
         XCTAssertFalse(source.contains("saveDraft"))
     }

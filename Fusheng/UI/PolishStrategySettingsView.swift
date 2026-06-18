@@ -180,13 +180,23 @@ struct PolishStrategySettingsView: View {
         testResult = ""
 
         let currentStrategy = strategy.normalized(for: selectedMode)
-        let model = settings.polishModel
+        let model = settings.polishModel.trimmingCharacters(in: .whitespacesAndNewlines)
 
         Task {
             do {
-                guard let apiKey = try keychain.loadAPIKey(), !apiKey.isEmpty else {
+                guard !model.isEmpty else {
+                    throw AppError.polishFailed("整理模型为空")
+                }
+
+                guard let loadedAPIKey = try keychain.loadAPIKey() else {
+                    throw AppError.missingAPIKey
+                }
+
+                let apiKey = loadedAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !apiKey.isEmpty else {
                     throw AppError.recorderFailed("请先在基础设置中保存 API Key")
                 }
+
                 let polishedText = try await polisher.polish(
                     rawText: rawText,
                     strategy: currentStrategy,
