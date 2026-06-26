@@ -1,0 +1,38 @@
+.DS_Store
+
+# Xcode
+build/
+DerivedData/
+*.xcresult
+*.xcuserstate
+*.xccheckout
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Local configuration and secrets
+.env
+.env.*
+*.p8
+*.p12
+*.cer
+*.mobileprovision
+*.provisionprofile
+
+# Local assistant and planning state
+.codex/
+.superpowers/
+
+# Local design previews
+voice-output-popup-redesign*.png
+
+# App/runtime logs
+*.log
