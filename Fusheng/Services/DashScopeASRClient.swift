@@ -11,20 +11,29 @@ private actor RecognitionAccumulator {
     private var finalText = ""
     private var partialText = ""
 
-    func record(text: String, isFinalSentence: Bool) {
-        partialText = text
+    func record(text: String, isFinalSentence: Bool) -> String {
+        if isFinalSentence {
+            if text.hasPrefix(finalText) {
+                finalText = text
+            } else {
+                finalText += text
+            }
 
-        guard isFinalSentence else { return }
-
-        if text.hasPrefix(finalText) {
-            finalText = text
-        } else {
-            finalText += text
+            partialText = finalText
+            return partialText
         }
+
+        if finalText.isEmpty || text.hasPrefix(finalText) {
+            partialText = text
+        } else {
+            partialText = finalText + text
+        }
+
+        return partialText
     }
 
     func resultIfAvailable() -> RecognitionResult? {
-        let rawText = finalText.isEmpty ? partialText : finalText
+        let rawText = partialText.isEmpty ? finalText : partialText
         guard !rawText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
         }
@@ -194,8 +203,8 @@ struct DashScopeASRClient: ASRRecognizing {
                 guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                     continue
                 }
-                await accumulator.record(text: text, isFinalSentence: isFinalSentence)
-                await onPartialResult(text)
+                let partialText = await accumulator.record(text: text, isFinalSentence: isFinalSentence)
+                await onPartialResult(partialText)
             case .taskFinished:
                 return await accumulator.resultIfAvailable() ?? RecognitionResult(rawText: "", partialText: "")
             case .taskFailed(let message):

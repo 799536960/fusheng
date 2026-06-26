@@ -124,6 +124,36 @@ final class DashScopeASRClientTests: XCTestCase {
         XCTAssertEqual(result.partialText, "你能听到我说话吗？你知道我在说什么吗？")
     }
 
+    func testRecognizePublishesAccumulatedPartialTextForSentenceChunks() async throws {
+        let task = FakeWebSocketTask(messages: [
+            .string(#"{ "header": { "event": "task-started" }, "payload": {} }"#),
+            .string(#"{ "header": { "event": "result-generated" }, "payload": { "output": { "sentence": { "text": "第一句。", "sentence_end": true } } } }"#),
+            .string(#"{ "header": { "event": "result-generated" }, "payload": { "output": { "sentence": { "text": "第二句。", "sentence_end": true } } } }"#),
+            .string(#"{ "header": { "event": "task-finished" }, "payload": {} }"#)
+        ])
+        let session = FakeWebSocketSession(task: task)
+        let client = DashScopeASRClient(session: session, startTimeout: 1, finishTimeout: 1)
+        let audio = AsyncThrowingStream<Data, Error> { continuation in
+            continuation.yield(Data([0x01]))
+            continuation.finish()
+        }
+        let partialCollector = PartialCollector()
+
+        let result = try await client.recognize(
+            audioChunks: audio,
+            model: "fun-asr-realtime",
+            apiKey: "test-key",
+            onPartialResult: { partial in
+                await partialCollector.append(partial)
+            }
+        )
+
+        let partials = await partialCollector.values
+        XCTAssertEqual(partials, ["第一句。", "第一句。第二句。"])
+        XCTAssertEqual(result.rawText, "第一句。第二句。")
+        XCTAssertEqual(result.partialText, "第一句。第二句。")
+    }
+
     func testRecognizeUsesLatestTextWhenTaskFinishedTimesOutAfterAudioEnds() async throws {
         let task = FakeWebSocketTask(
             messages: [

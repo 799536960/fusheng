@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import Foundation
 
 protocol TextPasteboardManaging {
@@ -28,7 +29,28 @@ struct SystemTextPasteboard: TextPasteboardManaging {
     }
 
     func restoreItems(_ items: [NSPasteboardItem]) {
-        _ = pasteboard.writeObjects(items)
+        _ = pasteboard.writeObjects(detachedPasteboardItems(from: items) ?? [])
+    }
+}
+
+private func detachedPasteboardItems(from items: [NSPasteboardItem]?) -> [NSPasteboardItem]? {
+    guard let items else { return nil }
+
+    return items.compactMap { item in
+        let detachedItem = NSPasteboardItem()
+        var copiedRepresentation = false
+
+        for type in item.types {
+            if let data = item.data(forType: type) {
+                detachedItem.setData(data, forType: type)
+                copiedRepresentation = true
+            } else if let string = item.string(forType: type) {
+                detachedItem.setString(string, forType: type)
+                copiedRepresentation = true
+            }
+        }
+
+        return copiedRepresentation ? detachedItem : nil
     }
 }
 
@@ -38,6 +60,10 @@ protocol PasteEventPosting {
 
 protocol TextSelectionPosting {
     func selectPreviousCharacters(_ count: Int) throws
+}
+
+protocol TextSelectionReading {
+    func selectedCharacterCount() -> Int?
 }
 
 struct CGEventPastePoster: PasteEventPosting {
@@ -85,22 +111,97 @@ struct CGEventTextSelectionPoster: TextSelectionPosting {
     }
 }
 
+struct SystemTextSelectionReader: TextSelectionReading {
+    func selectedCharacterCount() -> Int? {
+        guard AXIsProcessTrusted() else { return nil }
+
+        let systemWide = AXUIElementCreateSystemWide()
+        var focusedValue: AnyObject?
+        let focusedStatus = AXUIElementCopyAttributeValue(
+            systemWide,
+            kAXFocusedUIElementAttribute as CFString,
+            &focusedValue
+        )
+
+        guard focusedStatus == .success,
+              let focusedValue,
+              CFGetTypeID(focusedValue) == AXUIElementGetTypeID()
+        else {
+            return nil
+        }
+
+        let focusedElement = focusedValue as! AXUIElement
+        if let selectedTextCount = selectedTextCount(in: focusedElement) {
+            return selectedTextCount
+        }
+
+        return selectedRangeLength(in: focusedElement)
+    }
+
+    private func selectedTextCount(in element: AXUIElement) -> Int? {
+        var selectedTextValue: AnyObject?
+        let status = AXUIElementCopyAttributeValue(
+            element,
+            kAXSelectedTextAttribute as CFString,
+            &selectedTextValue
+        )
+
+        guard status == .success else { return nil }
+        return (selectedTextValue as? String)?.count
+    }
+
+    private func selectedRangeLength(in element: AXUIElement) -> Int? {
+        var selectedRangeValue: AnyObject?
+        let status = AXUIElementCopyAttributeValue(
+            element,
+            kAXSelectedTextRangeAttribute as CFString,
+            &selectedRangeValue
+        )
+
+        guard status == .success,
+              let selectedRangeValue,
+              CFGetTypeID(selectedRangeValue) == AXValueGetTypeID()
+        else {
+            return nil
+        }
+
+        let selectedRange = selectedRangeValue as! AXValue
+        guard AXValueGetType(selectedRange) == .cfRange else { return nil }
+
+        var range = CFRange()
+        guard AXValueGetValue(selectedRange, .cfRange, &range) else { return nil }
+        return range.length
+    }
+}
+
 struct TextInsertionService: TextInserting {
     private let pasteboard: TextPasteboardManaging
     private let pasteEventPoster: PasteEventPosting
     private let textSelectionPoster: TextSelectionPosting
+    private let textSelectionReader: TextSelectionReading?
     private let restoreDelayNanoseconds: UInt64
+    private let textSelectionDelayNanoseconds: UInt64
+    private let textSelectionConfirmationTimeoutNanoseconds: UInt64
+    private let textSelectionPollingIntervalNanoseconds: UInt64
 
     init(
         pasteboard: TextPasteboardManaging = SystemTextPasteboard(),
         pasteEventPoster: PasteEventPosting = CGEventPastePoster(),
         textSelectionPoster: TextSelectionPosting = CGEventTextSelectionPoster(),
-        restoreDelayNanoseconds: UInt64 = 250_000_000
+        textSelectionReader: TextSelectionReading? = SystemTextSelectionReader(),
+        restoreDelayNanoseconds: UInt64 = 250_000_000,
+        textSelectionDelayNanoseconds: UInt64 = 90_000_000,
+        textSelectionConfirmationTimeoutNanoseconds: UInt64 = 1_200_000_000,
+        textSelectionPollingIntervalNanoseconds: UInt64 = 20_000_000
     ) {
         self.pasteboard = pasteboard
         self.pasteEventPoster = pasteEventPoster
         self.textSelectionPoster = textSelectionPoster
+        self.textSelectionReader = textSelectionReader
         self.restoreDelayNanoseconds = restoreDelayNanoseconds
+        self.textSelectionDelayNanoseconds = textSelectionDelayNanoseconds
+        self.textSelectionConfirmationTimeoutNanoseconds = textSelectionConfirmationTimeoutNanoseconds
+        self.textSelectionPollingIntervalNanoseconds = textSelectionPollingIntervalNanoseconds
     }
 
     func paste(text: String, restoreClipboard: Bool) async throws {
@@ -142,14 +243,18 @@ struct TextInsertionService: TextInserting {
             pasteboard: pasteboard,
             pasteEventPoster: pasteEventPoster,
             textSelectionPoster: textSelectionPoster,
-            restoreDelayNanoseconds: restoreDelayNanoseconds
+            textSelectionReader: textSelectionReader,
+            restoreDelayNanoseconds: restoreDelayNanoseconds,
+            textSelectionDelayNanoseconds: textSelectionDelayNanoseconds,
+            textSelectionConfirmationTimeoutNanoseconds: textSelectionConfirmationTimeoutNanoseconds,
+            textSelectionPollingIntervalNanoseconds: textSelectionPollingIntervalNanoseconds
         )
     }
 
     private func restore(_ previousItems: [NSPasteboardItem]?) {
         pasteboard.clearContents()
-        if let previousItems {
-            pasteboard.restoreItems(previousItems)
+        if let detachedItems = detachedPasteboardItems(from: previousItems) {
+            pasteboard.restoreItems(detachedItems)
         }
     }
 }
@@ -159,7 +264,11 @@ private final class LiveTextComposition: TextComposing {
     private let pasteboard: TextPasteboardManaging
     private let pasteEventPoster: PasteEventPosting
     private let textSelectionPoster: TextSelectionPosting
+    private let textSelectionReader: TextSelectionReading?
     private let restoreDelayNanoseconds: UInt64
+    private let textSelectionDelayNanoseconds: UInt64
+    private let textSelectionConfirmationTimeoutNanoseconds: UInt64
+    private let textSelectionPollingIntervalNanoseconds: UInt64
     private let originalItems: [NSPasteboardItem]?
     private var composedText = ""
 
@@ -167,29 +276,53 @@ private final class LiveTextComposition: TextComposing {
         pasteboard: TextPasteboardManaging,
         pasteEventPoster: PasteEventPosting,
         textSelectionPoster: TextSelectionPosting,
-        restoreDelayNanoseconds: UInt64
+        textSelectionReader: TextSelectionReading?,
+        restoreDelayNanoseconds: UInt64,
+        textSelectionDelayNanoseconds: UInt64,
+        textSelectionConfirmationTimeoutNanoseconds: UInt64,
+        textSelectionPollingIntervalNanoseconds: UInt64
     ) {
         self.pasteboard = pasteboard
         self.pasteEventPoster = pasteEventPoster
         self.textSelectionPoster = textSelectionPoster
+        self.textSelectionReader = textSelectionReader
         self.restoreDelayNanoseconds = restoreDelayNanoseconds
-        self.originalItems = pasteboard.currentItems()
+        self.textSelectionDelayNanoseconds = textSelectionDelayNanoseconds
+        self.textSelectionConfirmationTimeoutNanoseconds = textSelectionConfirmationTimeoutNanoseconds
+        self.textSelectionPollingIntervalNanoseconds = textSelectionPollingIntervalNanoseconds
+        self.originalItems = detachedPasteboardItems(from: pasteboard.currentItems())
     }
 
     func update(text: String) async throws {
-        try replaceComposedText(with: text, shouldRestoreOriginalClipboard: false)
+        try await replaceComposedText(
+            with: text,
+            shouldRestoreOriginalClipboard: false,
+            shouldReplaceExistingText: false
+        )
     }
 
     func commit(text: String, restoreClipboard: Bool) async throws {
-        try replaceComposedText(with: text, shouldRestoreOriginalClipboard: restoreClipboard)
+        try await replaceComposedText(
+            with: text,
+            shouldRestoreOriginalClipboard: restoreClipboard,
+            shouldReplaceExistingText: true
+        )
 
         if restoreClipboard {
             restoreOriginalClipboardAfterDelay()
         }
     }
 
-    private func replaceComposedText(with text: String, shouldRestoreOriginalClipboard: Bool) throws {
-        if text.hasPrefix(composedText) {
+    private func replaceComposedText(
+        with text: String,
+        shouldRestoreOriginalClipboard: Bool,
+        shouldReplaceExistingText: Bool
+    ) async throws {
+        if text == composedText {
+            return
+        }
+
+        if !shouldReplaceExistingText, text.hasPrefix(composedText) {
             let suffix = String(text.dropFirst(composedText.count))
             guard !suffix.isEmpty else {
                 composedText = text
@@ -202,11 +335,61 @@ private final class LiveTextComposition: TextComposing {
         }
 
         if !composedText.isEmpty {
-            try textSelectionPoster.selectPreviousCharacters(composedText.count)
+            let previousCharacterCount = composedText.count
+            try textSelectionPoster.selectPreviousCharacters(previousCharacterCount)
+            try await waitForTextSelectionProcessing(characterCount: previousCharacterCount)
         }
 
         try pasteText(text, shouldRestoreOriginalClipboard: shouldRestoreOriginalClipboard)
         composedText = text
+    }
+
+    private func waitForTextSelectionProcessing(characterCount: Int) async throws {
+        if try await waitUntilTextSelectionIsConfirmed(characterCount: characterCount) {
+            return
+        }
+
+        let delay = textSelectionProcessingDelay(for: characterCount)
+        guard delay > 0 else { return }
+
+        try await Task.sleep(nanoseconds: delay)
+    }
+
+    private func waitUntilTextSelectionIsConfirmed(characterCount: Int) async throws -> Bool {
+        guard let textSelectionReader,
+              characterCount > 0,
+              textSelectionConfirmationTimeoutNanoseconds > 0
+        else {
+            return false
+        }
+
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .nanoseconds(Int64(textSelectionConfirmationTimeoutNanoseconds)))
+        var didReadSelection = false
+
+        while clock.now < deadline {
+            if let selectedCharacterCount = textSelectionReader.selectedCharacterCount() {
+                didReadSelection = true
+                if selectedCharacterCount >= characterCount {
+                    return true
+                }
+            } else if !didReadSelection {
+                return false
+            }
+
+            let interval = min(textSelectionPollingIntervalNanoseconds, textSelectionConfirmationTimeoutNanoseconds)
+            guard interval > 0 else { return false }
+            try await Task.sleep(nanoseconds: interval)
+        }
+
+        return false
+    }
+
+    private func textSelectionProcessingDelay(for characterCount: Int) -> UInt64 {
+        guard characterCount > 0, textSelectionDelayNanoseconds > 0 else { return 0 }
+
+        let scaledDelay = UInt64(characterCount) * 2_000_000
+        return min(max(textSelectionDelayNanoseconds, scaledDelay), 500_000_000)
     }
 
     private func pasteText(_ text: String, shouldRestoreOriginalClipboard: Bool) throws {
