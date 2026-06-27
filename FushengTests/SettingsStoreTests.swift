@@ -43,6 +43,19 @@ final class SettingsStoreTests: XCTestCase {
         XCTAssertFalse(reloaded.keepDraftHistoryEnabled)
     }
 
+    func testBlankModelSettingsFallBackToDefaults() {
+        let defaults = UserDefaults(suiteName: "SettingsStoreTests.blankModels")!
+        defaults.removePersistentDomain(forName: "SettingsStoreTests.blankModels")
+
+        var store = SettingsStore(defaults: defaults)
+        store.asrModel = " \n\t "
+        store.polishModel = " \n\t "
+
+        let reloaded = SettingsStore(defaults: defaults)
+        XCTAssertEqual(reloaded.asrModel, "fun-asr-realtime")
+        XCTAssertEqual(reloaded.polishModel, "qwen-plus")
+    }
+
     func testPersistsCustomSingleKeyHotkey() {
         let defaults = UserDefaults(suiteName: "SettingsStoreTests.customHotkey")!
         defaults.removePersistentDomain(forName: "SettingsStoreTests.customHotkey")

@@ -18,6 +18,11 @@ struct SettingsStore: SettingsProviding {
         }
     }
 
+    private enum Default {
+        static let asrModel = "fun-asr-realtime"
+        static let polishModel = "qwen-plus"
+    }
+
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -53,13 +58,13 @@ struct SettingsStore: SettingsProviding {
     }
 
     var asrModel: String {
-        get { defaults.string(forKey: Key.asrModel) ?? "fun-asr-realtime" }
-        set { defaults.set(newValue, forKey: Key.asrModel) }
+        get { modelValue(forKey: Key.asrModel, defaultValue: Default.asrModel) }
+        set { setModelValue(newValue, forKey: Key.asrModel) }
     }
 
     var polishModel: String {
-        get { defaults.string(forKey: Key.polishModel) ?? "qwen-plus" }
-        set { defaults.set(newValue, forKey: Key.polishModel) }
+        get { modelValue(forKey: Key.polishModel, defaultValue: Default.polishModel) }
+        set { setModelValue(newValue, forKey: Key.polishModel) }
     }
 
     var polishMode: TextPolishMode {
@@ -103,6 +108,20 @@ struct SettingsStore: SettingsProviding {
     func resetAllPolishStrategies() {
         for mode in TextPolishMode.allCases {
             resetPolishStrategy(for: mode)
+        }
+    }
+
+    private func modelValue(forKey key: String, defaultValue: String) -> String {
+        let value = defaults.string(forKey: key)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return value.isEmpty ? defaultValue : value
+    }
+
+    private func setModelValue(_ value: String, forKey key: String) {
+        let trimmedValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedValue.isEmpty {
+            defaults.removeObject(forKey: key)
+        } else {
+            defaults.set(trimmedValue, forKey: key)
         }
     }
 }

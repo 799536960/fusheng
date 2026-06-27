@@ -30,19 +30,26 @@ struct PolishStrategySettingsView: View {
             Form {
                 Section("普通选项") {
                     Toggle("启用自定义策略", isOn: $strategy.isCustomEnabled)
-                    Toggle("删除明显口头禅", isOn: $strategy.removeFillerWords)
-                    Toggle("删除无意义重复", isOn: $strategy.removeMeaninglessRepetition)
-                    Toggle("修正明显错别字", isOn: $strategy.fixObviousTypos)
-                    Toggle("补充自然标点", isOn: $strategy.addNaturalPunctuation)
-                    Toggle("允许轻微润色", isOn: $strategy.allowLightPolish)
+                    Text("关闭时使用当前模式默认策略；打开后下面的普通选项、模式策略和额外约束会生效。")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
 
-                    Picker("保守程度", selection: $strategy.conservatism) {
-                        ForEach(TextPolishConservatism.allCases) { conservatism in
-                            Text(conservatism.displayName)
-                                .tag(conservatism)
+                    Group {
+                        Toggle("删除明显口头禅", isOn: $strategy.removeFillerWords)
+                        Toggle("删除无意义重复", isOn: $strategy.removeMeaninglessRepetition)
+                        Toggle("修正明显错别字", isOn: $strategy.fixObviousTypos)
+                        Toggle("补充自然标点", isOn: $strategy.addNaturalPunctuation)
+                        Toggle("允许轻微润色", isOn: $strategy.allowLightPolish)
+
+                        Picker("保守程度", selection: $strategy.conservatism) {
+                            ForEach(TextPolishConservatism.allCases) { conservatism in
+                                Text(conservatism.displayName)
+                                    .tag(conservatism)
+                            }
                         }
+                        .pickerStyle(.segmented)
                     }
-                    .pickerStyle(.segmented)
+                    .disabled(!strategy.isCustomEnabled)
                 }
 
                 Section("固定安全边界") {
@@ -56,12 +63,14 @@ struct PolishStrategySettingsView: View {
                     TextEditor(text: $strategy.modeInstruction)
                         .font(.body)
                         .frame(minHeight: 120)
+                        .disabled(!strategy.isCustomEnabled)
                 }
 
                 Section("额外约束") {
                     TextEditor(text: $strategy.extraInstructions)
                         .font(.body)
                         .frame(minHeight: 96)
+                        .disabled(!strategy.isCustomEnabled)
                 }
 
                 Section("测试整理效果") {

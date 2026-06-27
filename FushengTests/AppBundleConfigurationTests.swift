@@ -197,6 +197,8 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(source.contains("@State private var activeTestID"))
         XCTAssertTrue(source.contains("activeTestID = nil"))
         XCTAssertTrue(source.contains("guard activeTestID == testID else { return }"))
+        XCTAssertTrue(source.contains("关闭时使用当前模式默认策略；打开后下面的普通选项、模式策略和额外约束会生效。"))
+        XCTAssertEqual(source.components(separatedBy: ".disabled(!strategy.isCustomEnabled)").count - 1, 3)
         XCTAssertFalse(source.contains("copyToClipboard"))
         XCTAssertFalse(source.contains("saveDraft"))
     }
