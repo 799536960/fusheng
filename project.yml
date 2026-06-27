@@ -68,6 +68,7 @@ targets:
           copy_item "Fusheng/Resources/Info.plist"
           copy_item "Fusheng/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json"
           copy_item "Fusheng/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png"
+          copy_item "Fusheng/Resources/Assets.xcassets/MenuBarIcon.imageset"
           copy_item "Fusheng.xcodeproj/project.pbxproj"
     settings:
       base:

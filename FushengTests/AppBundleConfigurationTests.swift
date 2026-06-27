@@ -67,7 +67,7 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(source.contains("FailedRecordingRetryService("))
     }
 
-    func testMenuBarExtraUsesTemplateAppIconForStatusBarIcon() throws {
+    func testMenuBarExtraUsesDedicatedTemplateAssetForStatusBarIcon() throws {
         let source = try String(
             contentsOf: try sourceSnapshotURL("Fusheng/App/FushengApp.swift"),
             encoding: .utf8
@@ -75,14 +75,56 @@ final class AppBundleConfigurationTests: XCTestCase {
 
         XCTAssertTrue(source.contains("MenuBarExtra"))
         XCTAssertTrue(source.contains("Image(nsImage: Self.menuBarIconImage)"))
-        XCTAssertTrue(source.contains("NSApplication.shared.applicationIconImage"))
+        XCTAssertTrue(source.contains("NSImage(named: \"MenuBarIcon\")"))
         XCTAssertTrue(source.contains(".renderingMode(.template)"))
         XCTAssertTrue(source.contains("image.isTemplate = true"))
         XCTAssertTrue(source.contains(".frame(width: 18, height: 18)"))
         XCTAssertTrue(source.contains(".accessibilityLabel(\"浮声\")"))
         XCTAssertFalse(source.contains("Label(\"浮声\", systemImage: coordinator.menuBarSystemImage)"))
+        XCTAssertFalse(source.contains("NSApplication.shared.applicationIconImage"))
         XCTAssertFalse(source.contains(".renderingMode(.original)"))
         XCTAssertFalse(source.contains("image.isTemplate = false"))
+    }
+
+    func testMenuBarIconAssetIsTransparentTemplateArtwork() throws {
+        let contentsURL = try sourceSnapshotURL("Fusheng/Resources/Assets.xcassets/MenuBarIcon.imageset/Contents.json")
+        let data = try Data(contentsOf: contentsURL)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let properties = try XCTUnwrap(json["properties"] as? [String: String])
+        XCTAssertEqual(properties["template-rendering-intent"], "template")
+
+        let images = try XCTUnwrap(json["images"] as? [[String: String]])
+        XCTAssertTrue(images.contains { image in
+            image["idiom"] == "universal"
+                && image["scale"] == "2x"
+                && image["filename"] == "MenuBarIcon@2x.png"
+        })
+
+        let retinaIcon = contentsURL.deletingLastPathComponent().appending(path: "MenuBarIcon@2x.png")
+        let bitmap = try XCTUnwrap(NSBitmapImageRep(data: Data(contentsOf: retinaIcon)))
+        XCTAssertEqual(bitmap.pixelsWide, 36)
+        XCTAssertEqual(bitmap.pixelsHigh, 36)
+
+        let totalPixels = bitmap.pixelsWide * bitmap.pixelsHigh
+        var transparentPixels = 0
+        var opaquePixels = 0
+
+        for y in 0..<bitmap.pixelsHigh {
+            for x in 0..<bitmap.pixelsWide {
+                let alpha = bitmap.colorAt(x: x, y: y)?.alphaComponent ?? 0
+                if alpha < 0.05 {
+                    transparentPixels += 1
+                } else if alpha > 0.95 {
+                    opaquePixels += 1
+                }
+            }
+        }
+
+        XCTAssertGreaterThan(transparentPixels, totalPixels / 2)
+        XCTAssertGreaterThan(opaquePixels, 80)
+        XCTAssertLessThan(opaquePixels, totalPixels / 2)
+        XCTAssertLessThan(bitmap.colorAt(x: 0, y: 0)?.alphaComponent ?? 1, 0.05)
+        XCTAssertLessThan(bitmap.colorAt(x: 35, y: 35)?.alphaComponent ?? 1, 0.05)
     }
 
     func testFailedRecordingViewShowsRetryAndDeleteActions() throws {
@@ -245,6 +287,7 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(source.contains("Copy source snapshot"))
         XCTAssertTrue(source.contains("Fusheng/App/FushengApp.swift"))
         XCTAssertTrue(source.contains("Fusheng/UI/RootMenuContent.swift"))
+        XCTAssertTrue(source.contains("Fusheng/Resources/Assets.xcassets/MenuBarIcon.imageset"))
         XCTAssertTrue(source.contains("Fusheng.xcodeproj/project.pbxproj"))
     }
 

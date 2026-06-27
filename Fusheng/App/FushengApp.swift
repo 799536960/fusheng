@@ -136,7 +136,8 @@ struct FushengApp: App {
     }
 
     private static var menuBarIconImage: NSImage {
-        let image = NSApplication.shared.applicationIconImage.copy() as? NSImage
+        let image = NSImage(named: "MenuBarIcon")
+            ?? NSImage(systemSymbolName: "waveform", accessibilityDescription: "浮声")
             ?? NSImage(size: NSSize(width: 18, height: 18))
         image.size = NSSize(width: 18, height: 18)
         image.isTemplate = true
