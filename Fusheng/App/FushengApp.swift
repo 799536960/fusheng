@@ -103,7 +103,7 @@ struct FushengApp: App {
                 .modelContainer(draftModelContainer)
         } label: {
             Image(nsImage: Self.menuBarIconImage)
-                .renderingMode(.original)
+                .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
                 .frame(width: 18, height: 18)
@@ -139,7 +139,7 @@ struct FushengApp: App {
         let image = NSApplication.shared.applicationIconImage.copy() as? NSImage
             ?? NSImage(size: NSSize(width: 18, height: 18))
         image.size = NSSize(width: 18, height: 18)
-        image.isTemplate = false
+        image.isTemplate = true
         return image
     }
 

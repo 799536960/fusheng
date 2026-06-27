@@ -67,7 +67,7 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(source.contains("FailedRecordingRetryService("))
     }
 
-    func testMenuBarExtraUsesBundledAppIconForStatusBarIcon() throws {
+    func testMenuBarExtraUsesTemplateAppIconForStatusBarIcon() throws {
         let source = try String(
             contentsOf: try sourceSnapshotURL("Fusheng/App/FushengApp.swift"),
             encoding: .utf8
@@ -76,10 +76,13 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(source.contains("MenuBarExtra"))
         XCTAssertTrue(source.contains("Image(nsImage: Self.menuBarIconImage)"))
         XCTAssertTrue(source.contains("NSApplication.shared.applicationIconImage"))
-        XCTAssertTrue(source.contains(".renderingMode(.original)"))
+        XCTAssertTrue(source.contains(".renderingMode(.template)"))
+        XCTAssertTrue(source.contains("image.isTemplate = true"))
         XCTAssertTrue(source.contains(".frame(width: 18, height: 18)"))
         XCTAssertTrue(source.contains(".accessibilityLabel(\"浮声\")"))
         XCTAssertFalse(source.contains("Label(\"浮声\", systemImage: coordinator.menuBarSystemImage)"))
+        XCTAssertFalse(source.contains(".renderingMode(.original)"))
+        XCTAssertFalse(source.contains("image.isTemplate = false"))
     }
 
     func testFailedRecordingViewShowsRetryAndDeleteActions() throws {
