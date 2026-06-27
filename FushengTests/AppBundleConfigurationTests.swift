@@ -2,7 +2,7 @@ import AppKit
 import XCTest
 
 final class AppBundleConfigurationTests: XCTestCase {
-    func testInfoPlistDefinesLaunchableBundleMetadata() throws {
+    func testInfoPlistDefinesMenuBarOnlyBundleMetadata() throws {
         let infoPlist = try sourceSnapshotURL("Fusheng/Resources/Info.plist")
         let data = try Data(contentsOf: infoPlist)
         let plist = try XCTUnwrap(PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any])
@@ -12,7 +12,7 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertEqual(plist["CFBundleName"] as? String, "$(PRODUCT_NAME)")
         XCTAssertEqual(plist["CFBundlePackageType"] as? String, "APPL")
         XCTAssertEqual(plist["CFBundleLocalizations"] as? [String], ["zh-Hans"])
-        XCTAssertNil(plist["LSUIElement"])
+        XCTAssertEqual(plist["LSUIElement"] as? Bool, true)
     }
 
     func testRootMenuUsesExplicitSettingsWindowController() throws {
@@ -65,6 +65,21 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(source.contains("FailedRecordingView("))
         XCTAssertTrue(source.contains("FailedRecordingStore("))
         XCTAssertTrue(source.contains("FailedRecordingRetryService("))
+    }
+
+    func testMenuBarExtraUsesBundledAppIconForStatusBarIcon() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/App/FushengApp.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("MenuBarExtra"))
+        XCTAssertTrue(source.contains("Image(nsImage: Self.menuBarIconImage)"))
+        XCTAssertTrue(source.contains("NSApplication.shared.applicationIconImage"))
+        XCTAssertTrue(source.contains(".renderingMode(.original)"))
+        XCTAssertTrue(source.contains(".frame(width: 18, height: 18)"))
+        XCTAssertTrue(source.contains(".accessibilityLabel(\"浮声\")"))
+        XCTAssertFalse(source.contains("Label(\"浮声\", systemImage: coordinator.menuBarSystemImage)"))
     }
 
     func testFailedRecordingViewShowsRetryAndDeleteActions() throws {
@@ -296,7 +311,7 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(source.contains("window.contentMinSize = NSSize(width: 860, height: 680)"))
         XCTAssertTrue(source.contains("window.setContentSize(NSSize(width: 920, height: 720))"))
         XCTAssertTrue(source.contains("window.title = \"设置\""))
-        XCTAssertTrue(source.contains("NSApp.setActivationPolicy(.regular)"))
+        XCTAssertFalse(source.contains("NSApp.setActivationPolicy(.regular)"))
         XCTAssertTrue(source.contains("NSApp.activate(ignoringOtherApps: true)"))
         XCTAssertTrue(source.contains("NSApp.activate()"))
         XCTAssertFalse(source.contains(".activateIgnoringOtherApps"))
@@ -307,6 +322,7 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertFalse(source.contains("window.delegate = self"))
         XCTAssertFalse(source.contains("windowWillClose"))
         XCTAssertFalse(source.contains("NSApp.setActivationPolicy(.accessory)"))
+        XCTAssertFalse(source.contains("setActivationPolicy"))
     }
 
     func testHotkeyRegistererUsesEventTapToInterceptSingleKey() throws {

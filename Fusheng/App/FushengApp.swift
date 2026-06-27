@@ -1,3 +1,4 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
@@ -101,7 +102,11 @@ struct FushengApp: App {
                 .environmentObject(coordinator)
                 .modelContainer(draftModelContainer)
         } label: {
-            Label("浮声", systemImage: coordinator.menuBarSystemImage)
+            Image(nsImage: Self.menuBarIconImage)
+                .renderingMode(.original)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 18, height: 18)
                 .accessibilityLabel("浮声")
         }
         .menuBarExtraStyle(.menu)
@@ -128,6 +133,14 @@ struct FushengApp: App {
         } catch {
             fatalError("Failed to create draft model container: \(error)")
         }
+    }
+
+    private static var menuBarIconImage: NSImage {
+        let image = NSApplication.shared.applicationIconImage.copy() as? NSImage
+            ?? NSImage(size: NSSize(width: 18, height: 18))
+        image.size = NSSize(width: 18, height: 18)
+        image.isTemplate = false
+        return image
     }
 
     private static var isRunningTests: Bool {

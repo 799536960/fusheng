@@ -14,7 +14,6 @@ final class SettingsWindowController {
             window.deminiaturize(nil)
         }
 
-        NSApp.setActivationPolicy(.regular)
         raise(window)
 
         DispatchQueue.main.async {
