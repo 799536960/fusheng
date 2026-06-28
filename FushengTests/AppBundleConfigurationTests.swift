@@ -455,6 +455,23 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertFalse(appSource.contains("Window(\"录音状态\""))
     }
 
+    func testRecordingOverlayWaveformUsesStaggeredAnimatedBars() throws {
+        let source = try String(
+            contentsOf: try sourceSnapshotURL("Fusheng/UI/RecordingOverlayView.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("TimelineView(.animation)"))
+        XCTAssertTrue(source.contains("private let barWeights"))
+        XCTAssertTrue(source.contains("private let phaseOffsets"))
+        XCTAssertTrue(source.contains("let clampedLevel = max(0, min(1, level))"))
+        XCTAssertTrue(source.contains("pow(clampedLevel, 0.72)"))
+        XCTAssertTrue(source.contains("sin(phase + phaseOffsets[index])"))
+        XCTAssertTrue(source.contains("max(7, min(26"))
+        XCTAssertTrue(source.contains("barCount = 12"))
+        XCTAssertFalse(source.contains("return CGFloat(6 + level * 28 * centerBoost)"))
+    }
+
     func testRecordingOverlayShowsThroughoutActiveWorkflow() throws {
         let source = try String(
             contentsOf: try projectFileURL("Fusheng/App/AppCoordinator.swift"),
