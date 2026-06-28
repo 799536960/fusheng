@@ -74,6 +74,62 @@ final class AppCoordinatorTests: XCTestCase {
         XCTAssertEqual(coordinator.state, .failed(.microphonePermissionDenied))
     }
 
+    func testStartRecordingPausesSystemAudioBeforeRecorderStarts() async {
+        let systemAudio = FakeSystemAudioController(pauseResult: true)
+        let recorder = FakeRecorder(onStart: {
+            XCTAssertEqual(systemAudio.pauseCount, 1)
+            XCTAssertEqual(systemAudio.resumeCount, 0)
+        })
+        let coordinator = makeCoordinator(
+            recorder: recorder,
+            systemAudioController: systemAudio
+        )
+
+        await coordinator.startRecording()
+
+        XCTAssertEqual(systemAudio.pauseCount, 1)
+        XCTAssertEqual(systemAudio.resumeCount, 0)
+        XCTAssertEqual(recorder.startCount, 1)
+    }
+
+    func testFinishRecordingResumesOnlyWhenStartPausedSystemAudio() async {
+        let systemAudio = FakeSystemAudioController(pauseResult: true)
+        let coordinator = makeCoordinator(systemAudioController: systemAudio)
+
+        await coordinator.startRecording()
+        await coordinator.finishRecording()
+
+        XCTAssertEqual(systemAudio.pauseCount, 1)
+        XCTAssertEqual(systemAudio.resumeCount, 1)
+    }
+
+    func testFinishRecordingDoesNotResumeWhenStartDidNotPauseSystemAudio() async {
+        let systemAudio = FakeSystemAudioController(pauseResult: false)
+        let coordinator = makeCoordinator(systemAudioController: systemAudio)
+
+        await coordinator.startRecording()
+        await coordinator.finishRecording()
+
+        XCTAssertEqual(systemAudio.pauseCount, 1)
+        XCTAssertEqual(systemAudio.resumeCount, 0)
+    }
+
+    func testStartRecordingResumesSystemAudioWhenRecorderStartFailsAfterPause() async {
+        let systemAudio = FakeSystemAudioController(pauseResult: true)
+        let recorder = FakeRecorder(startError: FakeError.recorderFailed)
+        let coordinator = makeCoordinator(
+            recorder: recorder,
+            systemAudioController: systemAudio
+        )
+
+        await coordinator.startRecording()
+
+        XCTAssertEqual(systemAudio.pauseCount, 1)
+        XCTAssertEqual(systemAudio.resumeCount, 1)
+        XCTAssertEqual(recorder.startCount, 1)
+        XCTAssertEqual(coordinator.state, .failed(.recorderFailed("recorderFailed")))
+    }
+
     func testSuccessfulFlowPastesWhenInputAvailable() async {
         let inserter = FakeInserter()
         let drafts = FakeDraftStore()
@@ -621,9 +677,11 @@ final class AppCoordinatorTests: XCTestCase {
         failedRecordingAudioStore: FailedRecordingAudioStoring? = nil,
         sourceAppProvider: FakeSourceAppProvider = FakeSourceAppProvider(),
         microphonePermissionProvider: MicrophonePermissionProviding = FakeMicrophonePermissionProvider(initialState: .authorized),
+        systemAudioController: SystemAudioControlling? = nil,
         initialState: AppWorkflowState = .idle
     ) -> AppCoordinator {
         let resolvedDraftStore = draftStore ?? (installDefaultDraftStore ? FakeDraftStore() : nil)
+        let resolvedSystemAudioController = systemAudioController ?? FakeSystemAudioController()
 
         return AppCoordinator(
             settings: settings,
@@ -638,6 +696,7 @@ final class AppCoordinatorTests: XCTestCase {
             failedRecordingStore: failedRecordingStore,
             failedRecordingAudioStore: failedRecordingAudioStore,
             microphonePermissionProvider: microphonePermissionProvider,
+            systemAudioController: resolvedSystemAudioController,
             initialState: initialState
         )
     }
@@ -647,6 +706,22 @@ private enum FakeError: Error {
     case pasteFailed
     case polishFailed
     case draftSaveFailed
+    case recorderFailed
+}
+
+extension FakeError: LocalizedError {
+    var errorDescription: String? {
+        switch self {
+        case .pasteFailed:
+            return "pasteFailed"
+        case .polishFailed:
+            return "polishFailed"
+        case .draftSaveFailed:
+            return "draftSaveFailed"
+        case .recorderFailed:
+            return "recorderFailed"
+        }
+    }
 }
 
 private struct SavedDraft: Equatable {
@@ -822,9 +897,20 @@ private final class FakeMicrophonePermissionProvider: MicrophonePermissionProvid
 private final class FakeRecorder: AudioRecording {
     private(set) var startCount = 0
     private(set) var stopCount = 0
+    private let startError: Error?
+    private let onStart: (() -> Void)?
+
+    init(startError: Error? = nil, onStart: (() -> Void)? = nil) {
+        self.startError = startError
+        self.onStart = onStart
+    }
 
     func startRecording() throws -> AsyncThrowingStream<Data, Error> {
         startCount += 1
+        onStart?()
+        if let startError {
+            throw startError
+        }
         return AsyncThrowingStream { continuation in
             continuation.yield(Data([1, 2, 3]))
             continuation.finish()
@@ -833,6 +919,25 @@ private final class FakeRecorder: AudioRecording {
 
     func stopRecording() {
         stopCount += 1
+    }
+}
+
+private final class FakeSystemAudioController: SystemAudioControlling {
+    private(set) var pauseCount = 0
+    private(set) var resumeCount = 0
+    private let pauseResult: Bool
+
+    init(pauseResult: Bool = false) {
+        self.pauseResult = pauseResult
+    }
+
+    func pauseForRecording() async -> Bool {
+        pauseCount += 1
+        return pauseResult
+    }
+
+    func resumeAfterRecording() async {
+        resumeCount += 1
     }
 }
 

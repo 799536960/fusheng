@@ -289,6 +289,7 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(source.contains("Fusheng/UI/RootMenuContent.swift"))
         XCTAssertTrue(source.contains("Fusheng/Resources/Assets.xcassets/MenuBarIcon.imageset"))
         XCTAssertTrue(source.contains("Fusheng/Services/AudioRecorder.swift"))
+        XCTAssertTrue(source.contains("Fusheng/Services/SystemAudioController.swift"))
         XCTAssertTrue(source.contains("Fusheng.xcodeproj/project.pbxproj"))
     }
 

@@ -37,6 +37,7 @@
 		95463C362DC81DADC667E5A6 /* TextPolishClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A9BC2793019DD0E13C7ED36 /* TextPolishClientTests.swift */; };
 		96A71E3324DEF045F9832DD9 /* KeychainServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35B542AFD912F27FBB99CD62 /* KeychainServiceTests.swift */; };
 		97F029E58A6DD957911B3771 /* FocusDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCCAC6989F0693D4FBC9860E /* FocusDetector.swift */; };
+		9D09EC825C1A434483103A39 /* SystemAudioController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07085702B3FE4A038F833E41 /* SystemAudioController.swift */; };
 		99C9FE4D65CEAFAC3D6E5B92 /* PolishStrategySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9871EFAC9663A58C1846329 /* PolishStrategySettingsView.swift */; };
 		A1FF0F20D1F9D7471143E9E4 /* FailedRecordingStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD35F75E63678AE8AC724389 /* FailedRecordingStore.swift */; };
 		AB7BF4BAE198A6B160307C74 /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA3E6FAB4AD61CDC0BD553FF /* AppCoordinator.swift */; };
@@ -75,6 +76,7 @@
 
 /* Begin PBXFileReference section */
 		09775EF0AB8E43AAA2913F17 /* Fusheng.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Fusheng.entitlements; sourceTree = "<group>"; };
+		07085702B3FE4A038F833E41 /* SystemAudioController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAudioController.swift; sourceTree = "<group>"; };
 		0A9BC2793019DD0E13C7ED36 /* TextPolishClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPolishClientTests.swift; sourceTree = "<group>"; };
 		1257E16BDD348F7EB27D205A /* DashScopeASREvents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DashScopeASREvents.swift; sourceTree = "<group>"; };
 		12C00C5BFFEE18B24DE8247A /* RecordingOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingOverlayView.swift; sourceTree = "<group>"; };
@@ -266,6 +268,7 @@
 				F2BA496C815DF758D3F98510 /* KeychainService.swift */,
 				AC13D3B3C1CF10236F587BD2 /* ServiceProtocols.swift */,
 				EF3319C2679C634A661673C1 /* SettingsStore.swift */,
+				07085702B3FE4A038F833E41 /* SystemAudioController.swift */,
 				3E4934C55DE91C7CC2BDF6AC /* TextInsertionService.swift */,
 				28959707E98FACE1534C4604 /* TextPolishClient.swift */,
 			);
@@ -385,7 +388,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -euo pipefail\n\nDESTINATION=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/SourceSnapshot\"\nrm -rf \"$DESTINATION\"\nmkdir -p \"$DESTINATION\"\n\ncopy_item() {\n  source_path=\"$SRCROOT/$1\"\n  destination_path=\"$DESTINATION/$1\"\n  mkdir -p \"$(dirname \"$destination_path\")\"\n  /usr/bin/ditto \"$source_path\" \"$destination_path\"\n}\n\ncopy_item \"Fusheng/App/FushengApp.swift\"\ncopy_item \"Fusheng/App/AppLaunchDelegate.swift\"\ncopy_item \"Fusheng/App/SettingsWindowController.swift\"\ncopy_item \"Fusheng/UI/RootMenuContent.swift\"\ncopy_item \"Fusheng/UI/FailedRecordingView.swift\"\ncopy_item \"Fusheng/UI/SettingsView.swift\"\ncopy_item \"Fusheng/UI/PolishStrategySettingsView.swift\"\ncopy_item \"Fusheng/Core/TextPolishStrategy.swift\"\ncopy_item \"Fusheng/Services/AudioRecorder.swift\"\ncopy_item \"Fusheng/Services/HotkeyService.swift\"\ncopy_item \"Fusheng/UI/RecordingOverlayView.swift\"\ncopy_item \"Fusheng/Resources/Info.plist\"\ncopy_item \"Fusheng/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json\"\ncopy_item \"Fusheng/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png\"\ncopy_item \"Fusheng/Resources/Assets.xcassets/MenuBarIcon.imageset\"\ncopy_item \"Fusheng.xcodeproj/project.pbxproj\"\n";
+			shellScript = "set -euo pipefail\n\nDESTINATION=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/SourceSnapshot\"\nrm -rf \"$DESTINATION\"\nmkdir -p \"$DESTINATION\"\n\ncopy_item() {\n  source_path=\"$SRCROOT/$1\"\n  destination_path=\"$DESTINATION/$1\"\n  mkdir -p \"$(dirname \"$destination_path\")\"\n  /usr/bin/ditto \"$source_path\" \"$destination_path\"\n}\n\ncopy_item \"Fusheng/App/FushengApp.swift\"\ncopy_item \"Fusheng/App/AppLaunchDelegate.swift\"\ncopy_item \"Fusheng/App/SettingsWindowController.swift\"\ncopy_item \"Fusheng/UI/RootMenuContent.swift\"\ncopy_item \"Fusheng/UI/FailedRecordingView.swift\"\ncopy_item \"Fusheng/UI/SettingsView.swift\"\ncopy_item \"Fusheng/UI/PolishStrategySettingsView.swift\"\ncopy_item \"Fusheng/Core/TextPolishStrategy.swift\"\ncopy_item \"Fusheng/Services/AudioRecorder.swift\"\ncopy_item \"Fusheng/Services/HotkeyService.swift\"\ncopy_item \"Fusheng/Services/SystemAudioController.swift\"\ncopy_item \"Fusheng/UI/RecordingOverlayView.swift\"\ncopy_item \"Fusheng/Resources/Info.plist\"\ncopy_item \"Fusheng/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json\"\ncopy_item \"Fusheng/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png\"\ncopy_item \"Fusheng/Resources/Assets.xcassets/MenuBarIcon.imageset\"\ncopy_item \"Fusheng.xcodeproj/project.pbxproj\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -419,6 +422,7 @@
 				7BBC79D524D38347AEE163F6 /* RootMenuContent.swift in Sources */,
 				D7CF214FB4629C2C4E625D08 /* ServiceProtocols.swift in Sources */,
 				09C110403610851782D4B5D1 /* SettingsStore.swift in Sources */,
+				9D09EC825C1A434483103A39 /* SystemAudioController.swift in Sources */,
 				C8D78AA1E2E2590E47242CA2 /* SettingsView.swift in Sources */,
 				3BBEB7EAA8B60028926FE14A /* SettingsWindowController.swift in Sources */,
 				BB35BF9E65817D833A3253F9 /* TextInsertionService.swift in Sources */,

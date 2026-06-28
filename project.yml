@@ -65,6 +65,7 @@ targets:
           copy_item "Fusheng/Core/TextPolishStrategy.swift"
           copy_item "Fusheng/Services/AudioRecorder.swift"
           copy_item "Fusheng/Services/HotkeyService.swift"
+          copy_item "Fusheng/Services/SystemAudioController.swift"
           copy_item "Fusheng/UI/RecordingOverlayView.swift"
           copy_item "Fusheng/Resources/Info.plist"
           copy_item "Fusheng/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json"

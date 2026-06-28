@@ -147,6 +147,12 @@ protocol AudioRecording {
     func stopRecording()
 }
 
+@MainActor
+protocol SystemAudioControlling {
+    func pauseForRecording() async -> Bool
+    func resumeAfterRecording() async
+}
+
 enum FocusInputContext: Equatable {
     case inputAvailable(appName: String)
     case noInput(appName: String)
