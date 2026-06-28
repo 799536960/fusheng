@@ -288,7 +288,23 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(source.contains("Fusheng/App/FushengApp.swift"))
         XCTAssertTrue(source.contains("Fusheng/UI/RootMenuContent.swift"))
         XCTAssertTrue(source.contains("Fusheng/Resources/Assets.xcassets/MenuBarIcon.imageset"))
+        XCTAssertTrue(source.contains("Fusheng/Services/AudioRecorder.swift"))
         XCTAssertTrue(source.contains("Fusheng.xcodeproj/project.pbxproj"))
+    }
+
+    func testAudioRecorderUsesSoftAudioLevelNormalization() throws {
+        let source = try String(
+            contentsOf: try projectFileURL("Fusheng/Services/AudioRecorder.swift"),
+            encoding: .utf8
+        )
+
+        XCTAssertTrue(source.contains("enum AudioLevelNormalizer"))
+        XCTAssertTrue(source.contains("static func normalizedLevel(rms: Double) -> Double"))
+        XCTAssertTrue(source.contains("20 * log10(clampedRMS)"))
+        XCTAssertTrue(source.contains("floorDecibels = -55.0"))
+        XCTAssertTrue(source.contains("ceilingDecibels = -8.0"))
+        XCTAssertTrue(source.contains("AudioLevelNormalizer.normalizedLevel(rms: rms)"))
+        XCTAssertFalse(source.contains("rms * 8"))
     }
 
     func testAppStartsHotkeyServiceDuringInitialization() throws {

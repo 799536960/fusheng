@@ -1,6 +1,20 @@
 import AVFoundation
 import Foundation
 
+enum AudioLevelNormalizer {
+    static func normalizedLevel(rms: Double) -> Double {
+        guard rms.isFinite, rms > 0 else { return 0 }
+
+        let clampedRMS = min(max(rms, 0.000_01), 1)
+        let decibels = 20 * log10(clampedRMS)
+        let floorDecibels = -55.0
+        let ceilingDecibels = -8.0
+        let linearLevel = (decibels - floorDecibels) / (ceilingDecibels - floorDecibels)
+        let clampedLevel = min(1, max(0, linearLevel))
+        return min(0.96, pow(clampedLevel, 1.35) * 0.96)
+    }
+}
+
 final class AudioRecorder: AudioRecording {
     private var engine: AVAudioEngine?
     private var continuation: AsyncThrowingStream<Data, Error>.Continuation?
@@ -111,7 +125,7 @@ final class AudioRecorder: AudioRecording {
         }
 
         let rms = sqrt(sumSquares / Double(sampleCount))
-        let level = min(1, max(0, rms * 8))
+        let level = AudioLevelNormalizer.normalizedLevel(rms: rms)
         Task { @MainActor in
             NotificationCenter.default.post(name: .audioLevelDidChange, object: nil, userInfo: ["level": level])
         }
