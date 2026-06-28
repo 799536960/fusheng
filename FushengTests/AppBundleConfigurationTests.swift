@@ -427,7 +427,7 @@ final class AppBundleConfigurationTests: XCTestCase {
         XCTAssertTrue(diagnosticsScript.contains("tail -F"))
     }
 
-    func testRecordingOverlayUsesGeneratedMicrophoneImageAndWaveform() throws {
+    func testRecordingOverlayUsesCompactIconOnlyHUD() throws {
         let source = try String(
             contentsOf: try sourceSnapshotURL("Fusheng/UI/RecordingOverlayView.swift"),
             encoding: .utf8
@@ -437,12 +437,21 @@ final class AppBundleConfigurationTests: XCTestCase {
             encoding: .utf8
         )
 
-        XCTAssertTrue(source.contains("GeneratedMicrophoneImage"))
+        XCTAssertTrue(source.contains("RecordingOverlayMetrics.size"))
+        XCTAssertTrue(source.contains("CGSize(width: 188, height: 72)"))
+        XCTAssertTrue(source.contains("RecordingStatusIcon"))
         XCTAssertTrue(source.contains("AudioLevelWaveformView"))
         XCTAssertTrue(source.contains(".audioLevelDidChange"))
         XCTAssertTrue(source.contains("configureFloatingOverlayWindow"))
         XCTAssertTrue(source.contains("panel.ignoresMouseEvents = true"))
         XCTAssertTrue(source.contains("window.ignoresMouseEvents = true"))
+        XCTAssertTrue(source.contains(".ultraThinMaterial"))
+        XCTAssertTrue(source.contains("RoundedRectangle(cornerRadius: 24"))
+        XCTAssertFalse(source.contains("GeneratedMicrophoneImage"))
+        XCTAssertFalse(source.contains("MicrophoneIconFactory"))
+        XCTAssertFalse(source.contains("coordinator.statusText"))
+        XCTAssertFalse(source.contains("latestPartialText"))
+        XCTAssertFalse(source.contains("Text(coordinator"))
         XCTAssertFalse(appSource.contains("Window(\"录音状态\""))
     }
 
