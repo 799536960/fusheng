@@ -90,6 +90,7 @@ enum DiagnosticLog {
 
 enum DeliveryResult: Equatable {
     case pasted
+    case copiedToClipboard
     case savedDraft
 }
 

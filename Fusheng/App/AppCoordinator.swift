@@ -399,30 +399,38 @@ final class AppCoordinator: ObservableObject {
                 }
             }
         case .noInput(let appName):
-            let copyErrorSummary = copyToClipboardIfNeeded(polishedText)
+            let copyResult = copyToClipboardIfNeeded(polishedText)
             if saveDraft(
                 polishedText: polishedText,
                 rawText: rawText,
                 sourceAppName: appName,
                 deliveryStatus: .noInput(appName: appName),
-                errorSummary: copyErrorSummary
+                errorSummary: copyResult.errorSummary
             ) {
                 clearActiveInputSession()
                 state = .completed(.savedDraft)
                 coordinatorLogger.info("state=completed savedDraft noInput")
+            } else if copyResult.didCopy {
+                clearActiveInputSession()
+                state = .completed(.copiedToClipboard)
+                coordinatorLogger.info("state=completed copiedToClipboard noInput")
             }
         case .accessibilityPermissionMissing(let appName):
-            let copyErrorSummary = copyToClipboardIfNeeded(polishedText)
+            let copyResult = copyToClipboardIfNeeded(polishedText)
             if saveDraft(
                 polishedText: polishedText,
                 rawText: rawText,
                 sourceAppName: appName,
                 deliveryStatus: .accessibilityPermissionMissing(appName: appName),
-                errorSummary: copyErrorSummary
+                errorSummary: copyResult.errorSummary
             ) {
                 clearActiveInputSession()
                 state = .completed(.savedDraft)
                 coordinatorLogger.info("state=completed savedDraft accessibilityMissing")
+            } else if copyResult.didCopy {
+                clearActiveInputSession()
+                state = .completed(.copiedToClipboard)
+                coordinatorLogger.info("state=completed copiedToClipboard accessibilityMissing")
             }
         }
     }
@@ -459,17 +467,17 @@ final class AppCoordinator: ObservableObject {
         activeTextComposition = textInserter?.makeComposition()
     }
 
-    private func copyToClipboardIfNeeded(_ text: String) -> String? {
-        guard settings.autoPasteEnabled else { return nil }
+    private func copyToClipboardIfNeeded(_ text: String) -> ClipboardCopyResult {
+        guard settings.autoPasteEnabled else { return .disabled }
 
         do {
             guard let textInserter else {
                 throw AppError.insertionFailed("剪贴板服务未初始化")
             }
             try textInserter.copyToClipboard(text: text)
-            return nil
+            return .copied
         } catch {
-            return error.localizedDescription
+            return .failed(error.localizedDescription)
         }
     }
 
@@ -555,6 +563,26 @@ final class AppCoordinator: ObservableObject {
             state = .failed(.insertionFailed(error.localizedDescription))
             return false
         }
+    }
+}
+
+private enum ClipboardCopyResult {
+    case disabled
+    case copied
+    case failed(String)
+
+    var didCopy: Bool {
+        if case .copied = self {
+            return true
+        }
+        return false
+    }
+
+    var errorSummary: String? {
+        if case .failed(let message) = self {
+            return message
+        }
+        return nil
     }
 }
 

@@ -9,6 +9,7 @@ final class AppWorkflowStateTests: XCTestCase {
         XCTAssertEqual(AppWorkflowState.polishing.displayText, "整理中")
         XCTAssertEqual(AppWorkflowState.delivering.displayText, "输出中")
         XCTAssertEqual(AppWorkflowState.completed(.pasted).displayText, "已粘贴")
+        XCTAssertEqual(AppWorkflowState.completed(.copiedToClipboard).displayText, "已复制")
         XCTAssertEqual(AppWorkflowState.completed(.savedDraft).displayText, "已保存草稿")
         XCTAssertEqual(AppWorkflowState.failed(.missingAPIKey).displayText, "错误：缺少 API Key")
     }

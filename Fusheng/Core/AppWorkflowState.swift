@@ -23,6 +23,8 @@ enum AppWorkflowState: Equatable {
             return "输出中"
         case .completed(.pasted):
             return "已粘贴"
+        case .completed(.copiedToClipboard):
+            return "已复制"
         case .completed(.savedDraft):
             return "已保存草稿"
         case .failed(let error):

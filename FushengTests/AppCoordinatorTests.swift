@@ -632,50 +632,53 @@ final class AppCoordinatorTests: XCTestCase {
         XCTAssertEqual(audioStore.writers.first?.deleted, true)
     }
 
-    func testDraftSaveFailureFailsWorkflow() async {
+    func testDraftSaveFailureStillCopiesNoInputTextWhenOutputSwitchEnabled() async {
+        let inserter = FakeInserter()
         let coordinator = makeCoordinator(
             focusDetector: FakeFocus(.noInput(appName: "Preview")),
+            textInserter: inserter,
             draftStore: FakeDraftStore(saveError: FakeError.draftSaveFailed)
         )
 
         await coordinator.startRecording()
         await coordinator.finishRecording()
 
-        guard case .failed(.insertionFailed) = coordinator.state else {
-            return XCTFail("Expected insertion failure, got \(coordinator.state)")
-        }
+        XCTAssertEqual(inserter.copiedTexts, ["整理文本"])
+        XCTAssertEqual(coordinator.state, .completed(.copiedToClipboard))
     }
 
-    func testDraftHistoryDisabledFailsWhenDraftIsRequired() async {
+    func testDraftHistoryDisabledStillCopiesNoInputTextWhenOutputSwitchEnabled() async {
         let settings = FakeSettings(keepDraftHistoryEnabled: false)
+        let inserter = FakeInserter()
         let drafts = FakeDraftStore()
         let coordinator = makeCoordinator(
             settings: settings,
             focusDetector: FakeFocus(.noInput(appName: "Preview")),
+            textInserter: inserter,
             draftStore: drafts
         )
 
         await coordinator.startRecording()
         await coordinator.finishRecording()
 
+        XCTAssertEqual(inserter.copiedTexts, ["整理文本"])
         XCTAssertEqual(drafts.savedDrafts.count, 0)
-        guard case .failed(.insertionFailed) = coordinator.state else {
-            return XCTFail("Expected insertion failure, got \(coordinator.state)")
-        }
+        XCTAssertEqual(coordinator.state, .completed(.copiedToClipboard))
     }
 
-    func testMissingDraftStoreFailsWhenDraftIsRequired() async {
+    func testMissingDraftStoreStillCopiesNoInputTextWhenOutputSwitchEnabled() async {
+        let inserter = FakeInserter()
         let coordinator = makeCoordinator(
             focusDetector: FakeFocus(.noInput(appName: "Preview")),
+            textInserter: inserter,
             installDefaultDraftStore: false
         )
 
         await coordinator.startRecording()
         await coordinator.finishRecording()
 
-        guard case .failed(.insertionFailed) = coordinator.state else {
-            return XCTFail("Expected insertion failure, got \(coordinator.state)")
-        }
+        XCTAssertEqual(inserter.copiedTexts, ["整理文本"])
+        XCTAssertEqual(coordinator.state, .completed(.copiedToClipboard))
     }
 
     func testStartRecordingDoesNothingWhileWorkflowIsActive() async {
