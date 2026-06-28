@@ -1,89 +1,260 @@
-import Darwin
+import AudioToolbox
+import CoreAudio
 import Foundation
 import OSLog
 
 private let systemAudioLogger = Logger(subsystem: "com.fusheng.voiceinput", category: "SystemAudio")
-private let mediaRemoteQueryTimeout: TimeInterval = 0.8
+
+struct SystemAudioOutputState: Equatable {
+    let isMuted: Bool?
+    let volume: Float32?
+}
+
+@MainActor
+protocol SystemAudioOutputControlling {
+    func captureState() -> SystemAudioOutputState?
+    func setMuted(_ isMuted: Bool) -> Bool
+    func setVolume(_ volume: Float32) -> Bool
+    func restore(_ state: SystemAudioOutputState) -> Bool
+}
 
 @MainActor
 final class SystemAudioController: SystemAudioControlling {
-    private let mediaRemote: MediaRemotePlaybackControlling
+    private let outputController: SystemAudioOutputControlling
+    private var stateBeforeRecording: SystemAudioOutputState?
 
     init() {
-        self.mediaRemote = MediaRemoteClient()
+        self.outputController = CoreAudioSystemOutputController()
     }
 
-    init(mediaRemote: MediaRemotePlaybackControlling) {
-        self.mediaRemote = mediaRemote
+    init(outputController: SystemAudioOutputControlling) {
+        self.outputController = outputController
     }
 
-    func pauseForRecording() async -> Bool {
-        let playbackState = await mediaRemote.currentPlaybackState()
-        let isPlaying = playbackState == .playing ? nil : await mediaRemote.currentNowPlayingApplicationIsPlaying()
-        let playbackRate = playbackState == .playing || isPlaying == true ? nil : await mediaRemote.currentPlaybackRate()
-        let wasPlaying = playbackState == .playing || isPlaying == true || playbackRate.indicatesPlayback
-        DiagnosticLog.write(
-            category: "SystemAudio",
-            message: "pause requested playbackState=\(playbackState.logName) isPlaying=\(isPlaying.logName) playbackRate=\(playbackRate.logName)"
-        )
-
-        let didPause = mediaRemote.send(command: .pause)
-        systemAudioLogger.info("system audio pause command sent result=\(didPause, privacy: .public)")
-        DiagnosticLog.write(
-            category: "SystemAudio",
-            message: "pause command sent result=\(didPause) playbackState=\(playbackState.logName) isPlaying=\(isPlaying.logName) playbackRate=\(playbackRate.logName)"
-        )
-        return wasPlaying && didPause
-    }
-
-    func resumeAfterRecording() async {
-        let didResume = mediaRemote.send(command: .play)
-        systemAudioLogger.info("system audio resume command sent result=\(didResume, privacy: .public)")
-        DiagnosticLog.write(category: "SystemAudio", message: "resume command sent result=\(didResume)")
-    }
-}
-
-enum MediaRemoteCommand: Int32 {
-    case play = 0
-    case pause = 1
-}
-
-enum MediaRemotePlaybackState: Int32 {
-    case unknown = 0
-    case playing = 1
-    case paused = 2
-    case stopped = 3
-    case interrupted = 4
-}
-
-private extension Optional where Wrapped == MediaRemotePlaybackState {
-    var logName: String {
-        switch self {
-        case .some(.unknown):
-            return "unknown"
-        case .some(.playing):
-            return "playing"
-        case .some(.paused):
-            return "paused"
-        case .some(.stopped):
-            return "stopped"
-        case .some(.interrupted):
-            return "interrupted"
-        case .none:
-            return "unavailable"
+    func silenceForRecording() async -> Bool {
+        guard let state = outputController.captureState() else {
+            DiagnosticLog.write(category: "SystemAudio", message: "silence skipped because output state was unavailable")
+            return false
         }
+
+        stateBeforeRecording = state
+        let didMute = outputController.setMuted(true)
+        let didSetFallbackVolume = didMute ? false : outputController.setVolume(0)
+        let didSilence = didMute || didSetFallbackVolume
+
+        DiagnosticLog.write(
+            category: "SystemAudio",
+            message: "silence requested didMute=\(didMute) didSetFallbackVolume=\(didSetFallbackVolume) previousMuted=\(state.isMuted.logName) previousVolume=\(state.volume.logName)"
+        )
+
+        if !didSilence {
+            stateBeforeRecording = nil
+        }
+
+        return didSilence
+    }
+
+    func restoreAfterRecording() async {
+        guard let state = stateBeforeRecording else {
+            DiagnosticLog.write(category: "SystemAudio", message: "restore skipped because no output state was captured")
+            return
+        }
+
+        stateBeforeRecording = nil
+        let didRestore = outputController.restore(state)
+        DiagnosticLog.write(
+            category: "SystemAudio",
+            message: "restore requested result=\(didRestore) muted=\(state.isMuted.logName) volume=\(state.volume.logName)"
+        )
     }
 }
 
-private extension Optional where Wrapped == Double {
-    var logName: String {
-        guard let value = self else { return "unavailable" }
-        return String(format: "%.3f", value)
+private final class CoreAudioSystemOutputController: SystemAudioOutputControlling {
+    func captureState() -> SystemAudioOutputState? {
+        guard let deviceID = defaultOutputDeviceID() else {
+            systemAudioLogger.info("default output device unavailable")
+            return nil
+        }
+
+        let isMuted = readBoolProperty(
+            selector: kAudioDevicePropertyMute,
+            scope: kAudioDevicePropertyScopeOutput,
+            deviceID: deviceID
+        )
+        let volume = readFloat32Property(
+            selector: kAudioHardwareServiceDeviceProperty_VirtualMainVolume,
+            scope: kAudioDevicePropertyScopeOutput,
+            deviceID: deviceID
+        )
+
+        guard isMuted != nil || volume != nil else {
+            systemAudioLogger.info("default output device exposes neither mute nor main volume")
+            return nil
+        }
+
+        return SystemAudioOutputState(isMuted: isMuted, volume: volume)
     }
 
-    var indicatesPlayback: Bool {
-        guard let value = self else { return false }
-        return value > 0.01
+    func setMuted(_ isMuted: Bool) -> Bool {
+        guard let deviceID = defaultOutputDeviceID() else { return false }
+        return writeBoolProperty(
+            selector: kAudioDevicePropertyMute,
+            scope: kAudioDevicePropertyScopeOutput,
+            deviceID: deviceID,
+            value: isMuted
+        )
+    }
+
+    func setVolume(_ volume: Float32) -> Bool {
+        guard let deviceID = defaultOutputDeviceID() else { return false }
+        return writeFloat32Property(
+            selector: kAudioHardwareServiceDeviceProperty_VirtualMainVolume,
+            scope: kAudioDevicePropertyScopeOutput,
+            deviceID: deviceID,
+            value: min(max(volume, 0), 1)
+        )
+    }
+
+    func restore(_ state: SystemAudioOutputState) -> Bool {
+        var didRestore = false
+
+        if let volume = state.volume {
+            didRestore = setVolume(volume) || didRestore
+        }
+
+        if let isMuted = state.isMuted {
+            didRestore = setMuted(isMuted) || didRestore
+        }
+
+        return didRestore
+    }
+
+    private func defaultOutputDeviceID() -> AudioObjectID? {
+        var address = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain
+        )
+        var deviceID = AudioObjectID(kAudioObjectUnknown)
+        var dataSize = UInt32(MemoryLayout<AudioObjectID>.size)
+
+        let status = AudioObjectGetPropertyData(
+            AudioObjectID(kAudioObjectSystemObject),
+            &address,
+            0,
+            nil,
+            &dataSize,
+            &deviceID
+        )
+
+        guard status == noErr, deviceID != AudioObjectID(kAudioObjectUnknown) else {
+            systemAudioLogger.info("failed reading default output device status=\(status)")
+            return nil
+        }
+
+        return deviceID
+    }
+
+    private func readBoolProperty(
+        selector: AudioObjectPropertySelector,
+        scope: AudioObjectPropertyScope,
+        deviceID: AudioObjectID
+    ) -> Bool? {
+        var address = audioPropertyAddress(selector: selector, scope: scope)
+        guard AudioObjectHasProperty(deviceID, &address) else { return nil }
+
+        var value: UInt32 = 0
+        var dataSize = UInt32(MemoryLayout<UInt32>.size)
+        let status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &dataSize, &value)
+        guard status == noErr else {
+            systemAudioLogger.info("failed reading bool property selector=\(selector) status=\(status)")
+            return nil
+        }
+
+        return value != 0
+    }
+
+    private func writeBoolProperty(
+        selector: AudioObjectPropertySelector,
+        scope: AudioObjectPropertyScope,
+        deviceID: AudioObjectID,
+        value: Bool
+    ) -> Bool {
+        var address = audioPropertyAddress(selector: selector, scope: scope)
+        guard isPropertySettable(deviceID: deviceID, address: &address) else { return false }
+
+        var rawValue: UInt32 = value ? 1 : 0
+        let dataSize = UInt32(MemoryLayout<UInt32>.size)
+        let status = AudioObjectSetPropertyData(deviceID, &address, 0, nil, dataSize, &rawValue)
+        if status != noErr {
+            systemAudioLogger.info("failed writing bool property selector=\(selector) status=\(status)")
+        }
+        return status == noErr
+    }
+
+    private func readFloat32Property(
+        selector: AudioObjectPropertySelector,
+        scope: AudioObjectPropertyScope,
+        deviceID: AudioObjectID
+    ) -> Float32? {
+        var address = audioPropertyAddress(selector: selector, scope: scope)
+        guard AudioObjectHasProperty(deviceID, &address) else { return nil }
+
+        var value: Float32 = 0
+        var dataSize = UInt32(MemoryLayout<Float32>.size)
+        let status = AudioObjectGetPropertyData(deviceID, &address, 0, nil, &dataSize, &value)
+        guard status == noErr else {
+            systemAudioLogger.info("failed reading Float32 property selector=\(selector) status=\(status)")
+            return nil
+        }
+
+        return value
+    }
+
+    private func writeFloat32Property(
+        selector: AudioObjectPropertySelector,
+        scope: AudioObjectPropertyScope,
+        deviceID: AudioObjectID,
+        value: Float32
+    ) -> Bool {
+        var address = audioPropertyAddress(selector: selector, scope: scope)
+        guard isPropertySettable(deviceID: deviceID, address: &address) else { return false }
+
+        var rawValue = value
+        let dataSize = UInt32(MemoryLayout<Float32>.size)
+        let status = AudioObjectSetPropertyData(deviceID, &address, 0, nil, dataSize, &rawValue)
+        if status != noErr {
+            systemAudioLogger.info("failed writing Float32 property selector=\(selector) status=\(status)")
+        }
+        return status == noErr
+    }
+
+    private func audioPropertyAddress(
+        selector: AudioObjectPropertySelector,
+        scope: AudioObjectPropertyScope
+    ) -> AudioObjectPropertyAddress {
+        AudioObjectPropertyAddress(
+            mSelector: selector,
+            mScope: scope,
+            mElement: kAudioObjectPropertyElementMain
+        )
+    }
+
+    private func isPropertySettable(
+        deviceID: AudioObjectID,
+        address: inout AudioObjectPropertyAddress
+    ) -> Bool {
+        let selector = address.mSelector
+        guard AudioObjectHasProperty(deviceID, &address) else { return false }
+
+        var isSettable = DarwinBoolean(false)
+        let status = AudioObjectIsPropertySettable(deviceID, &address, &isSettable)
+        guard status == noErr else {
+            systemAudioLogger.info("failed checking property settable selector=\(selector) status=\(status)")
+            return false
+        }
+
+        return isSettable.boolValue
     }
 }
 
@@ -94,199 +265,9 @@ private extension Optional where Wrapped == Bool {
     }
 }
 
-@MainActor
-protocol MediaRemotePlaybackControlling {
-    func currentPlaybackState() async -> MediaRemotePlaybackState?
-    func currentNowPlayingApplicationIsPlaying() async -> Bool?
-    func currentPlaybackRate() async -> Double?
-    func send(command: MediaRemoteCommand) -> Bool
-}
-
-@MainActor
-private final class MediaRemoteClient: MediaRemotePlaybackControlling {
-    private typealias PlaybackStateCallback = @convention(block) (Int32) -> Void
-    private typealias GetPlaybackStateFunction = @convention(c) (DispatchQueue, @escaping PlaybackStateCallback) -> Void
-    private typealias NowPlayingIsPlayingCallback = @convention(block) (UInt8) -> Void
-    private typealias GetNowPlayingApplicationIsPlayingFunction = @convention(c) (DispatchQueue, @escaping NowPlayingIsPlayingCallback) -> Void
-    private typealias NowPlayingInfoCallback = @convention(block) (CFDictionary?) -> Void
-    private typealias GetNowPlayingInfoFunction = @convention(c) (DispatchQueue, @escaping NowPlayingInfoCallback) -> Void
-    private typealias SendCommandFunction = @convention(c) (Int32, CFDictionary?) -> Void
-
-    private let frameworkHandle: UnsafeMutableRawPointer?
-    private let getPlaybackState: GetPlaybackStateFunction?
-    private let getNowPlayingApplicationIsPlaying: GetNowPlayingApplicationIsPlayingFunction?
-    private let getNowPlayingInfo: GetNowPlayingInfoFunction?
-    private let sendCommand: SendCommandFunction?
-
-    init() {
-        frameworkHandle = dlopen("/System/Library/PrivateFrameworks/MediaRemote.framework/MediaRemote", RTLD_NOW)
-
-        if let frameworkHandle,
-           let symbol = dlsym(frameworkHandle, "MRMediaRemoteGetNowPlayingApplicationPlaybackState") {
-            getPlaybackState = unsafeBitCast(symbol, to: GetPlaybackStateFunction.self)
-        } else {
-            getPlaybackState = nil
-        }
-
-        if let frameworkHandle,
-           let symbol = dlsym(frameworkHandle, "MRMediaRemoteGetNowPlayingApplicationIsPlaying") {
-            getNowPlayingApplicationIsPlaying = unsafeBitCast(symbol, to: GetNowPlayingApplicationIsPlayingFunction.self)
-        } else {
-            getNowPlayingApplicationIsPlaying = nil
-        }
-
-        if let frameworkHandle,
-           let symbol = dlsym(frameworkHandle, "MRMediaRemoteGetNowPlayingInfo") {
-            getNowPlayingInfo = unsafeBitCast(symbol, to: GetNowPlayingInfoFunction.self)
-        } else {
-            getNowPlayingInfo = nil
-        }
-
-        if let frameworkHandle,
-           let symbol = dlsym(frameworkHandle, "MRMediaRemoteSendCommand") {
-            sendCommand = unsafeBitCast(symbol, to: SendCommandFunction.self)
-        } else {
-            sendCommand = nil
-        }
-    }
-
-    deinit {
-        if let frameworkHandle {
-            dlclose(frameworkHandle)
-        }
-    }
-
-    func currentPlaybackState() async -> MediaRemotePlaybackState? {
-        guard let getPlaybackState else {
-            systemAudioLogger.info("MediaRemote playback state function unavailable")
-            return nil
-        }
-
-        return await withCheckedContinuation { continuation in
-            let box = PlaybackStateContinuationBox(continuation: continuation)
-
-            getPlaybackState(.main) { rawState in
-                box.resume(with: MediaRemotePlaybackState(rawValue: rawState))
-            }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + mediaRemoteQueryTimeout) {
-                box.resume(with: nil)
-            }
-        }
-    }
-
-    func currentNowPlayingApplicationIsPlaying() async -> Bool? {
-        guard let getNowPlayingApplicationIsPlaying else {
-            systemAudioLogger.info("MediaRemote now playing isPlaying function unavailable")
-            DiagnosticLog.write(category: "SystemAudio", message: "now playing isPlaying function unavailable")
-            return nil
-        }
-
-        return await withCheckedContinuation { continuation in
-            let box = BoolContinuationBox(continuation: continuation)
-
-            getNowPlayingApplicationIsPlaying(.main) { rawValue in
-                box.resume(with: rawValue != 0)
-            }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + mediaRemoteQueryTimeout) {
-                box.resume(with: nil)
-            }
-        }
-    }
-
-    func currentPlaybackRate() async -> Double? {
-        guard let getNowPlayingInfo else {
-            systemAudioLogger.info("MediaRemote now playing info function unavailable")
-            DiagnosticLog.write(category: "SystemAudio", message: "now playing info function unavailable")
-            return nil
-        }
-
-        return await withCheckedContinuation { continuation in
-            let box = PlaybackRateContinuationBox(continuation: continuation)
-
-            getNowPlayingInfo(.main) { info in
-                let dictionary = info as NSDictionary?
-                let value = dictionary?["kMRMediaRemoteNowPlayingInfoPlaybackRate"]
-                if let number = value as? NSNumber {
-                    box.resume(with: number.doubleValue)
-                } else if let double = value as? Double {
-                    box.resume(with: double)
-                } else {
-                    box.resume(with: nil)
-                }
-            }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + mediaRemoteQueryTimeout) {
-                box.resume(with: nil)
-            }
-        }
-    }
-
-    func send(command: MediaRemoteCommand) -> Bool {
-        guard let sendCommand else {
-            systemAudioLogger.info("MediaRemote send command function unavailable")
-            return false
-        }
-
-        sendCommand(command.rawValue, nil)
-        return true
-    }
-}
-
-private final class BoolContinuationBox {
-    private let lock = NSLock()
-    private var didResume = false
-    private let continuation: CheckedContinuation<Bool?, Never>
-
-    init(continuation: CheckedContinuation<Bool?, Never>) {
-        self.continuation = continuation
-    }
-
-    func resume(with value: Bool?) {
-        lock.lock()
-        defer { lock.unlock() }
-
-        guard !didResume else { return }
-        didResume = true
-        continuation.resume(returning: value)
-    }
-}
-
-private final class PlaybackRateContinuationBox {
-    private let lock = NSLock()
-    private var didResume = false
-    private let continuation: CheckedContinuation<Double?, Never>
-
-    init(continuation: CheckedContinuation<Double?, Never>) {
-        self.continuation = continuation
-    }
-
-    func resume(with rate: Double?) {
-        lock.lock()
-        defer { lock.unlock() }
-
-        guard !didResume else { return }
-        didResume = true
-        continuation.resume(returning: rate)
-    }
-}
-
-private final class PlaybackStateContinuationBox {
-    private let lock = NSLock()
-    private var didResume = false
-    private let continuation: CheckedContinuation<MediaRemotePlaybackState?, Never>
-
-    init(continuation: CheckedContinuation<MediaRemotePlaybackState?, Never>) {
-        self.continuation = continuation
-    }
-
-    func resume(with state: MediaRemotePlaybackState?) {
-        lock.lock()
-        defer { lock.unlock() }
-
-        guard !didResume else { return }
-        didResume = true
-        continuation.resume(returning: state)
+private extension Optional where Wrapped == Float32 {
+    var logName: String {
+        guard let value = self else { return "unavailable" }
+        return String(format: "%.3f", value)
     }
 }

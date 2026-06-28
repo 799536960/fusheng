@@ -74,11 +74,11 @@ final class AppCoordinatorTests: XCTestCase {
         XCTAssertEqual(coordinator.state, .failed(.microphonePermissionDenied))
     }
 
-    func testStartRecordingPausesSystemAudioBeforeRecorderStarts() async {
-        let systemAudio = FakeSystemAudioController(pauseResult: true)
+    func testStartRecordingSilencesSystemAudioBeforeRecorderStarts() async {
+        let systemAudio = FakeSystemAudioController(silenceResult: true)
         let recorder = FakeRecorder(onStart: {
-            XCTAssertEqual(systemAudio.pauseCount, 1)
-            XCTAssertEqual(systemAudio.resumeCount, 0)
+            XCTAssertEqual(systemAudio.silenceCount, 1)
+            XCTAssertEqual(systemAudio.restoreCount, 0)
         })
         let coordinator = makeCoordinator(
             recorder: recorder,
@@ -87,35 +87,35 @@ final class AppCoordinatorTests: XCTestCase {
 
         await coordinator.startRecording()
 
-        XCTAssertEqual(systemAudio.pauseCount, 1)
-        XCTAssertEqual(systemAudio.resumeCount, 0)
+        XCTAssertEqual(systemAudio.silenceCount, 1)
+        XCTAssertEqual(systemAudio.restoreCount, 0)
         XCTAssertEqual(recorder.startCount, 1)
     }
 
-    func testFinishRecordingResumesOnlyWhenStartPausedSystemAudio() async {
-        let systemAudio = FakeSystemAudioController(pauseResult: true)
+    func testFinishRecordingRestoresOnlyWhenStartSilencedSystemAudio() async {
+        let systemAudio = FakeSystemAudioController(silenceResult: true)
         let coordinator = makeCoordinator(systemAudioController: systemAudio)
 
         await coordinator.startRecording()
         await coordinator.finishRecording()
 
-        XCTAssertEqual(systemAudio.pauseCount, 1)
-        XCTAssertEqual(systemAudio.resumeCount, 1)
+        XCTAssertEqual(systemAudio.silenceCount, 1)
+        XCTAssertEqual(systemAudio.restoreCount, 1)
     }
 
-    func testFinishRecordingDoesNotResumeWhenStartDidNotPauseSystemAudio() async {
-        let systemAudio = FakeSystemAudioController(pauseResult: false)
+    func testFinishRecordingDoesNotRestoreWhenStartDidNotSilenceSystemAudio() async {
+        let systemAudio = FakeSystemAudioController(silenceResult: false)
         let coordinator = makeCoordinator(systemAudioController: systemAudio)
 
         await coordinator.startRecording()
         await coordinator.finishRecording()
 
-        XCTAssertEqual(systemAudio.pauseCount, 1)
-        XCTAssertEqual(systemAudio.resumeCount, 0)
+        XCTAssertEqual(systemAudio.silenceCount, 1)
+        XCTAssertEqual(systemAudio.restoreCount, 0)
     }
 
-    func testStartRecordingResumesSystemAudioWhenRecorderStartFailsAfterPause() async {
-        let systemAudio = FakeSystemAudioController(pauseResult: true)
+    func testStartRecordingRestoresSystemAudioWhenRecorderStartFailsAfterSilence() async {
+        let systemAudio = FakeSystemAudioController(silenceResult: true)
         let recorder = FakeRecorder(startError: FakeError.recorderFailed)
         let coordinator = makeCoordinator(
             recorder: recorder,
@@ -124,50 +124,67 @@ final class AppCoordinatorTests: XCTestCase {
 
         await coordinator.startRecording()
 
-        XCTAssertEqual(systemAudio.pauseCount, 1)
-        XCTAssertEqual(systemAudio.resumeCount, 1)
+        XCTAssertEqual(systemAudio.silenceCount, 1)
+        XCTAssertEqual(systemAudio.restoreCount, 1)
         XCTAssertEqual(recorder.startCount, 1)
         XCTAssertEqual(coordinator.state, .failed(.recorderFailed("recorderFailed")))
     }
 
-    func testSystemAudioPauseSendsDefensivePauseWhenPlaybackStateIsUnavailable() async {
-        let mediaRemote = FakeMediaRemotePlaybackController(playbackState: nil)
-        let controller = SystemAudioController(mediaRemote: mediaRemote)
+    func testSystemAudioSilenceMutesOutputAndRestoresPreviousState() async {
+        let output = FakeSystemAudioOutputController(
+            state: SystemAudioOutputState(isMuted: false, volume: 0.42)
+        )
+        let controller = SystemAudioController(outputController: output)
 
-        let shouldResume = await controller.pauseForRecording()
+        let shouldRestore = await controller.silenceForRecording()
 
-        XCTAssertEqual(mediaRemote.sentCommands, [.pause])
-        XCTAssertFalse(shouldResume)
+        XCTAssertTrue(shouldRestore)
+        XCTAssertEqual(output.muteChanges, [true])
+        XCTAssertEqual(output.volumeChanges, [])
+
+        await controller.restoreAfterRecording()
+
+        XCTAssertEqual(output.restoredStates, [
+            SystemAudioOutputState(isMuted: false, volume: 0.42)
+        ])
     }
 
-    func testSystemAudioPauseSendsPauseWhenPlaybackStateReportsPaused() async {
-        let mediaRemote = FakeMediaRemotePlaybackController(playbackState: .paused)
-        let controller = SystemAudioController(mediaRemote: mediaRemote)
+    func testSystemAudioSilenceRestoresOriginalMutedState() async {
+        let output = FakeSystemAudioOutputController(
+            state: SystemAudioOutputState(isMuted: true, volume: 0.25)
+        )
+        let controller = SystemAudioController(outputController: output)
 
-        let shouldResume = await controller.pauseForRecording()
+        let shouldRestore = await controller.silenceForRecording()
 
-        XCTAssertEqual(mediaRemote.sentCommands, [.pause])
-        XCTAssertFalse(shouldResume)
+        XCTAssertTrue(shouldRestore)
+        XCTAssertEqual(output.muteChanges, [true])
+
+        await controller.restoreAfterRecording()
+
+        XCTAssertEqual(output.restoredStates, [
+            SystemAudioOutputState(isMuted: true, volume: 0.25)
+        ])
     }
 
-    func testSystemAudioPauseUsesPlaybackRateWhenPlaybackStateReportsPaused() async {
-        let mediaRemote = FakeMediaRemotePlaybackController(playbackState: .paused, playbackRate: 1)
-        let controller = SystemAudioController(mediaRemote: mediaRemote)
+    func testSystemAudioSilenceFallsBackToZeroVolumeWhenMuteIsUnavailable() async {
+        let output = FakeSystemAudioOutputController(
+            state: SystemAudioOutputState(isMuted: nil, volume: 0.61),
+            muteResult: false
+        )
+        let controller = SystemAudioController(outputController: output)
 
-        let shouldResume = await controller.pauseForRecording()
+        let shouldRestore = await controller.silenceForRecording()
 
-        XCTAssertEqual(mediaRemote.sentCommands, [.pause])
-        XCTAssertTrue(shouldResume)
-    }
+        XCTAssertTrue(shouldRestore)
+        XCTAssertEqual(output.muteChanges, [true])
+        XCTAssertEqual(output.volumeChanges, [0])
 
-    func testSystemAudioPauseUsesNowPlayingIsPlayingWhenPlaybackStateReportsPaused() async {
-        let mediaRemote = FakeMediaRemotePlaybackController(playbackState: .paused, isPlaying: true)
-        let controller = SystemAudioController(mediaRemote: mediaRemote)
+        await controller.restoreAfterRecording()
 
-        let shouldResume = await controller.pauseForRecording()
-
-        XCTAssertEqual(mediaRemote.sentCommands, [.pause])
-        XCTAssertTrue(shouldResume)
+        XCTAssertEqual(output.restoredStates, [
+            SystemAudioOutputState(isMuted: nil, volume: 0.61)
+        ])
     }
 
     func testSuccessfulFlowPastesWhenInputAvailable() async {
@@ -963,50 +980,58 @@ private final class FakeRecorder: AudioRecording {
 }
 
 private final class FakeSystemAudioController: SystemAudioControlling {
-    private(set) var pauseCount = 0
-    private(set) var resumeCount = 0
-    private let pauseResult: Bool
+    private(set) var silenceCount = 0
+    private(set) var restoreCount = 0
+    private let silenceResult: Bool
 
-    init(pauseResult: Bool = false) {
-        self.pauseResult = pauseResult
+    init(silenceResult: Bool = false) {
+        self.silenceResult = silenceResult
     }
 
-    func pauseForRecording() async -> Bool {
-        pauseCount += 1
-        return pauseResult
+    func silenceForRecording() async -> Bool {
+        silenceCount += 1
+        return silenceResult
     }
 
-    func resumeAfterRecording() async {
-        resumeCount += 1
+    func restoreAfterRecording() async {
+        restoreCount += 1
     }
 }
 
-private final class FakeMediaRemotePlaybackController: MediaRemotePlaybackControlling {
-    private(set) var sentCommands: [MediaRemoteCommand] = []
-    private let playbackState: MediaRemotePlaybackState?
-    private let isPlaying: Bool?
-    private let playbackRate: Double?
+private final class FakeSystemAudioOutputController: SystemAudioOutputControlling {
+    private(set) var muteChanges: [Bool] = []
+    private(set) var volumeChanges: [Float32] = []
+    private(set) var restoredStates: [SystemAudioOutputState] = []
+    private let state: SystemAudioOutputState?
+    private let muteResult: Bool
+    private let volumeResult: Bool
 
-    init(playbackState: MediaRemotePlaybackState?, isPlaying: Bool? = nil, playbackRate: Double? = nil) {
-        self.playbackState = playbackState
-        self.isPlaying = isPlaying
-        self.playbackRate = playbackRate
+    init(
+        state: SystemAudioOutputState?,
+        muteResult: Bool = true,
+        volumeResult: Bool = true
+    ) {
+        self.state = state
+        self.muteResult = muteResult
+        self.volumeResult = volumeResult
     }
 
-    func currentPlaybackState() async -> MediaRemotePlaybackState? {
-        playbackState
+    func captureState() -> SystemAudioOutputState? {
+        state
     }
 
-    func currentNowPlayingApplicationIsPlaying() async -> Bool? {
-        isPlaying
+    func setMuted(_ isMuted: Bool) -> Bool {
+        muteChanges.append(isMuted)
+        return muteResult
     }
 
-    func currentPlaybackRate() async -> Double? {
-        playbackRate
+    func setVolume(_ volume: Float32) -> Bool {
+        volumeChanges.append(volume)
+        return volumeResult
     }
 
-    func send(command: MediaRemoteCommand) -> Bool {
-        sentCommands.append(command)
+    func restore(_ state: SystemAudioOutputState) -> Bool {
+        restoredStates.append(state)
         return true
     }
 }

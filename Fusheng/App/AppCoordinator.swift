@@ -36,7 +36,7 @@ final class AppCoordinator: ObservableObject {
     private var activeInputApplication: NSRunningApplication?
     private var activeFailedRecordingID: UUID?
     private var activeFailedRecordingAudioWriter: FailedRecordingAudioWriting?
-    private var shouldResumeSystemAudioAfterRecording = false
+    private var shouldRestoreSystemAudioAfterRecording = false
 
     init(initialState: AppWorkflowState = .idle) {
         self.state = initialState
@@ -169,7 +169,7 @@ final class AppCoordinator: ObservableObject {
             activeFailedRecordingID = writer == nil ? nil : failedRecordingID
             activeFailedRecordingAudioWriter = writer
 
-            shouldResumeSystemAudioAfterRecording = await systemAudioController.pauseForRecording()
+            shouldRestoreSystemAudioAfterRecording = await systemAudioController.silenceForRecording()
             activeAudioStream = try recorder.startRecording()
             coordinatorLogger.info("audio recorder started")
             DiagnosticLog.write(category: "Coordinator", message: "audio recorder started")
@@ -191,13 +191,13 @@ final class AppCoordinator: ObservableObject {
             coordinatorLogger.info("state=recording")
             DiagnosticLog.write(category: "Coordinator", message: "state=recording")
         } catch let error as AppError {
-            await resumeSystemAudioIfNeeded()
+            await restoreSystemAudioIfNeeded()
             discardFailedRecordingCandidateAudio()
             state = .failed(error)
             coordinatorLogger.error("startRecording failed: \(error.localizedDescription, privacy: .public)")
             DiagnosticLog.write(category: "Coordinator", message: "startRecording failed \(error.localizedDescription)")
         } catch {
-            await resumeSystemAudioIfNeeded()
+            await restoreSystemAudioIfNeeded()
             discardFailedRecordingCandidateAudio()
             state = .failed(.recorderFailed(error.localizedDescription))
             coordinatorLogger.error("startRecording failed: \(error.localizedDescription, privacy: .public)")
@@ -226,7 +226,7 @@ final class AppCoordinator: ObservableObject {
         }
 
         guard activeAudioStream != nil, let apiKey = activeAPIKey, let recognitionTask = activeRecognitionTask else {
-            await resumeSystemAudioIfNeeded()
+            await restoreSystemAudioIfNeeded()
             discardFailedRecordingCandidateAudio()
             clearActiveInputSession()
             state = .failed(.recorderFailed("没有正在进行的录音"))
@@ -246,7 +246,7 @@ final class AppCoordinator: ObservableObject {
         coordinatorLogger.info("finishRecording accepted")
         DiagnosticLog.write(category: "Coordinator", message: "finishRecording accepted")
         recorder?.stopRecording()
-        await resumeSystemAudioIfNeeded()
+        await restoreSystemAudioIfNeeded()
         activeAudioStream = nil
         activeAPIKey = nil
 
@@ -504,11 +504,11 @@ final class AppCoordinator: ObservableObject {
         activeRecognitionTask = nil
     }
 
-    private func resumeSystemAudioIfNeeded() async {
-        guard shouldResumeSystemAudioAfterRecording else { return }
+    private func restoreSystemAudioIfNeeded() async {
+        guard shouldRestoreSystemAudioAfterRecording else { return }
 
-        shouldResumeSystemAudioAfterRecording = false
-        await systemAudioController.resumeAfterRecording()
+        shouldRestoreSystemAudioAfterRecording = false
+        await systemAudioController.restoreAfterRecording()
     }
 
     private func appName(from focusContext: FocusInputContext) -> String {
