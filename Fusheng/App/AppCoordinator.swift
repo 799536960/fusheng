@@ -378,10 +378,24 @@ final class AppCoordinator: ObservableObject {
             do {
                 await reactivateCapturedInputApplication()
                 if let activeTextComposition {
-                    try await activeTextComposition.commit(text: polishedText, restoreClipboard: true)
+                    try await activeTextComposition.commit(
+                        text: polishedText,
+                        restoreClipboard: settings.restoreClipboardEnabled
+                    )
                 } else {
-                    try await textInserter.paste(text: polishedText, restoreClipboard: true)
+                    try await textInserter.paste(
+                        text: polishedText,
+                        restoreClipboard: settings.restoreClipboardEnabled
+                    )
                 }
+                _ = saveDraft(
+                    polishedText: polishedText,
+                    rawText: rawText,
+                    sourceAppName: appName,
+                    deliveryStatus: .pasted,
+                    errorSummary: nil,
+                    failureBehavior: .ignore
+                )
                 clearActiveInputSession()
                 state = .completed(.pasted)
                 coordinatorLogger.info("state=completed pasted")
@@ -441,7 +455,10 @@ final class AppCoordinator: ObservableObject {
 
         if case .inputAvailable = focusContext, let activeTextComposition {
             await reactivateCapturedInputApplication()
-            try? await activeTextComposition.commit(text: rawText, restoreClipboard: true)
+            try? await activeTextComposition.commit(
+                text: rawText,
+                restoreClipboard: settings.restoreClipboardEnabled
+            )
         }
 
         if saveDraft(
@@ -537,15 +554,16 @@ final class AppCoordinator: ObservableObject {
         rawText: String,
         sourceAppName: String,
         deliveryStatus: DraftDeliveryStatus,
-        errorSummary: String?
+        errorSummary: String?,
+        failureBehavior: DraftSaveFailureBehavior = .failWorkflow
     ) -> Bool {
         guard settings.keepDraftHistoryEnabled else {
-            state = .failed(.insertionFailed("草稿历史已关闭"))
+            handleDraftSaveFailure("草稿历史已关闭", behavior: failureBehavior)
             return false
         }
 
         guard let draftStore else {
-            state = .failed(.insertionFailed("草稿服务未初始化"))
+            handleDraftSaveFailure("草稿服务未初始化", behavior: failureBehavior)
             return false
         }
 
@@ -560,10 +578,25 @@ final class AppCoordinator: ObservableObject {
             )
             return true
         } catch {
-            state = .failed(.insertionFailed(error.localizedDescription))
+            handleDraftSaveFailure(error.localizedDescription, behavior: failureBehavior)
             return false
         }
     }
+
+    private func handleDraftSaveFailure(_ message: String, behavior: DraftSaveFailureBehavior) {
+        switch behavior {
+        case .failWorkflow:
+            state = .failed(.insertionFailed(message))
+        case .ignore:
+            coordinatorLogger.error("optional draft save failed: \(message, privacy: .public)")
+            DiagnosticLog.write(category: "Coordinator", message: "optional draft save failed \(message)")
+        }
+    }
+}
+
+private enum DraftSaveFailureBehavior {
+    case failWorkflow
+    case ignore
 }
 
 private enum ClipboardCopyResult {

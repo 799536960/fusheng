@@ -202,7 +202,10 @@ final class AppCoordinatorTests: XCTestCase {
         XCTAssertEqual(inserter.composer.updatedTexts, ["原始文本"])
         XCTAssertEqual(inserter.composer.committedTexts, ["整理文本"])
         XCTAssertEqual(inserter.pastedTexts, [])
-        XCTAssertEqual(drafts.savedDrafts.count, 0)
+        XCTAssertEqual(drafts.savedDrafts.map(\.polishedText), ["整理文本"])
+        XCTAssertEqual(drafts.savedDrafts.map(\.rawASRText), ["原始文本"])
+        XCTAssertEqual(drafts.savedDrafts.map(\.deliveryStatus), [.pasted])
+        XCTAssertEqual(drafts.savedDrafts.map(\.sourceAppName), ["Notes"])
         XCTAssertEqual(coordinator.latestPartialText, "原始文本")
         XCTAssertEqual(coordinator.state, .completed(.pasted))
     }
@@ -304,9 +307,43 @@ final class AppCoordinatorTests: XCTestCase {
 
         XCTAssertEqual(inserter.composer.updatedTexts, ["原始文本"])
         XCTAssertEqual(inserter.composer.committedTexts, ["整理文本"])
+        XCTAssertEqual(inserter.composer.committedRestoreClipboardValues, [true])
         XCTAssertEqual(inserter.copiedTexts, [])
         XCTAssertEqual(inserter.pastedTexts, [])
-        XCTAssertEqual(drafts.savedDrafts.count, 0)
+        XCTAssertEqual(drafts.savedDrafts.map(\.polishedText), ["整理文本"])
+        XCTAssertEqual(drafts.savedDrafts.map(\.deliveryStatus), [.pasted])
+        XCTAssertEqual(coordinator.state, .completed(.pasted))
+    }
+
+    func testInputAvailableRespectsRestoreClipboardSettingWhenCommittingText() async {
+        let settings = FakeSettings(restoreClipboardEnabled: false)
+        let inserter = FakeInserter()
+        let coordinator = makeCoordinator(
+            settings: settings,
+            focusDetector: FakeFocus(.inputAvailable(appName: "Notes")),
+            textInserter: inserter
+        )
+
+        await coordinator.startRecording()
+        await coordinator.finishRecording()
+
+        XCTAssertEqual(inserter.composer.committedTexts, ["整理文本"])
+        XCTAssertEqual(inserter.composer.committedRestoreClipboardValues, [false])
+        XCTAssertEqual(coordinator.state, .completed(.pasted))
+    }
+
+    func testInputAvailableStillCompletesWhenHistorySaveFails() async {
+        let inserter = FakeInserter()
+        let coordinator = makeCoordinator(
+            focusDetector: FakeFocus(.inputAvailable(appName: "Notes")),
+            textInserter: inserter,
+            draftStore: FakeDraftStore(saveError: FakeError.draftSaveFailed)
+        )
+
+        await coordinator.startRecording()
+        await coordinator.finishRecording()
+
+        XCTAssertEqual(inserter.composer.committedTexts, ["整理文本"])
         XCTAssertEqual(coordinator.state, .completed(.pasted))
     }
 
@@ -384,7 +421,8 @@ final class AppCoordinatorTests: XCTestCase {
         XCTAssertEqual(inserter.copiedTexts, ["无输入框整理"])
         XCTAssertEqual(inserter.compositions.map(\.updatedTexts), [["输入框语音"]])
         XCTAssertEqual(inserter.compositions.map(\.committedTexts), [["输入框整理"]])
-        XCTAssertEqual(drafts.savedDrafts.map(\.deliveryStatus), [.noInput(appName: "Preview")])
+        XCTAssertEqual(drafts.savedDrafts.map(\.deliveryStatus), [.noInput(appName: "Preview"), .pasted])
+        XCTAssertEqual(drafts.savedDrafts.map(\.polishedText), ["无输入框整理", "输入框整理"])
         XCTAssertEqual(coordinator.state, .completed(.pasted))
     }
 
@@ -1260,6 +1298,7 @@ private final class SequencedFocus: FocusDetecting {
 
 private final class FakeInserter: TextInserting {
     private(set) var pastedTexts: [String] = []
+    private(set) var pastedRestoreClipboardValues: [Bool] = []
     private(set) var copiedTexts: [String] = []
     @MainActor private(set) lazy var composer = FakeTextComposition(commitError: error)
     let error: Error?
@@ -1273,6 +1312,7 @@ private final class FakeInserter: TextInserting {
             throw error
         }
         pastedTexts.append(text)
+        pastedRestoreClipboardValues.append(restoreClipboard)
     }
 
     func copyToClipboard(text: String) throws {
@@ -1287,11 +1327,13 @@ private final class FakeInserter: TextInserting {
 @MainActor
 private final class FreshCompositionInserter: TextInserting {
     private(set) var pastedTexts: [String] = []
+    private(set) var pastedRestoreClipboardValues: [Bool] = []
     private(set) var copiedTexts: [String] = []
     private(set) var compositions: [FakeTextComposition] = []
 
     func paste(text: String, restoreClipboard: Bool) async throws {
         pastedTexts.append(text)
+        pastedRestoreClipboardValues.append(restoreClipboard)
     }
 
     func copyToClipboard(text: String) throws {
@@ -1308,6 +1350,7 @@ private final class FreshCompositionInserter: TextInserting {
 private final class FakeTextComposition: TextComposing {
     private(set) var updatedTexts: [String] = []
     private(set) var committedTexts: [String] = []
+    private(set) var committedRestoreClipboardValues: [Bool] = []
     let commitError: Error?
 
     init(commitError: Error? = nil) {
@@ -1323,6 +1366,7 @@ private final class FakeTextComposition: TextComposing {
             throw commitError
         }
         committedTexts.append(text)
+        committedRestoreClipboardValues.append(restoreClipboard)
     }
 }
 
