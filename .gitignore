@@ -30,6 +30,7 @@ Package.resolved
 # Local assistant and planning state
 .codex/
 .superpowers/
+.worktrees/
 
 # Local design previews
 voice-output-popup-redesign*.png
